@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 
 export interface User {
   id: string;
@@ -11,21 +12,19 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean | string>;
+  signup: (name: string, email: string, password: string) => Promise<boolean | string>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = "@airselfy_user";
 
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+function getApiBase(): string {
+  if (Platform.OS === "web") return "/api";
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) return `https://${domain}/api`;
+  return "/api";
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -40,39 +39,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  async function login(email: string, _password: string): Promise<boolean> {
-    try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const saved: User = JSON.parse(stored);
-        if (saved.email.toLowerCase() === email.toLowerCase()) {
-          setUser(saved);
-          return true;
-        }
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }
-
   async function signup(
     name: string,
     email: string,
-    _password: string
-  ): Promise<boolean> {
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      initials: getInitials(name),
-    };
+    password: string
+  ): Promise<boolean | string> {
     try {
+      const res = await fetch(`${getApiBase()}/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.status === 409) {
+        return data.error ?? "An account with that email already exists.";
+      }
+      if (!res.ok) {
+        return data.error ?? "Something went wrong. Please try again.";
+      }
+
+      const newUser: User = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        initials: data.initials,
+      };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
       setUser(newUser);
       return true;
     } catch {
-      return false;
+      return "Unable to connect. Please check your connection.";
+    }
+  }
+
+  async function login(
+    email: string,
+    password: string
+  ): Promise<boolean | string> {
+    try {
+      const res = await fetch(`${getApiBase()}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.status === 401) {
+        return data.error ?? "Invalid email or password.";
+      }
+      if (!res.ok) {
+        return data.error ?? "Something went wrong. Please try again.";
+      }
+
+      const loggedInUser: User = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        initials: data.initials,
+      };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(loggedInUser));
+      setUser(loggedInUser);
+      return true;
+    } catch {
+      return "Unable to connect. Please check your connection.";
     }
   }
 

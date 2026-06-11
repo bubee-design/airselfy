@@ -54,13 +54,14 @@ export default function SignupScreen() {
     }
     setError("");
     setLoading(true);
-    const ok = await signup(name, email, password);
+    const result = await signup(name, email, password);
     setLoading(false);
-    if (ok) {
+    if (result === true) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)/");
     } else {
-      setError("Something went wrong. Please try again.");
+      setError(typeof result === "string" ? result : "Something went wrong. Please try again.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }
 

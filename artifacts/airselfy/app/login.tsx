@@ -38,13 +38,13 @@ export default function LoginScreen() {
     }
     setError("");
     setLoading(true);
-    const ok = await login(email, password);
+    const result = await login(email, password);
     setLoading(false);
-    if (ok) {
+    if (result === true) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)/");
     } else {
-      setError("No account found. Please sign up first.");
+      setError(typeof result === "string" ? result : "Invalid email or password.");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }
