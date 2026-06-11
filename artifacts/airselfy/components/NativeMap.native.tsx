@@ -36,7 +36,6 @@ export default function NativeMap() {
   const [selected, setSelected] = useState<NearbyUser | null>(null);
   const [mediaType, setMediaType] = useState<"photo" | "video" | null>(null);
   const [duration, setDuration] = useState<number>(10);
-  const [requestSent, setRequestSent] = useState(false);
   const sheetAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -72,16 +71,27 @@ export default function NativeMap() {
     Animated.timing(sheetAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
       setSelected(null);
       setMediaType(null);
-      setRequestSent(false);
     });
   }
 
   function handleSendRequest(type: "photo" | "video", dur?: number) {
     if (!selected) return;
+    const target = selected;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    sendRequest(selected.id, type, dur ?? duration);
-    setRequestSent(true);
-    setTimeout(closeSheet, 1600);
+    sendRequest(target.id, type, dur ?? duration);
+    closeSheet();
+    router.push({
+      pathname: "/compass",
+      params: {
+        userId: target.id,
+        userName: target.name,
+        type,
+        duration: String(dur ?? duration),
+        targetLat: String(target.lat),
+        targetLon: String(target.lon),
+        mode: "requester",
+      },
+    });
   }
 
   const sheetTranslateY = sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [400, 0] });
@@ -168,17 +178,7 @@ export default function NativeMap() {
               </View>
             </View>
 
-            {requestSent ? (
-              <View style={styles.sentRow}>
-                <View style={[styles.sentIcon, { backgroundColor: colors.primary + "20", borderColor: colors.primary + "40" }]}>
-                  <Feather name="check" size={22} color={colors.primary} />
-                </View>
-                <Text style={[styles.sentTitle, { color: colors.foreground }]}>Request sent!</Text>
-                <Text style={[styles.sentSub, { color: colors.mutedForeground }]}>
-                  Waiting for {selected.name.split(" ")[0]} to accept…
-                </Text>
-              </View>
-            ) : mediaType !== "video" ? (
+            {mediaType !== "video" ? (
               <>
                 <Text style={[styles.sheetLabel, { color: colors.mutedForeground }]}>
                   ASK {selected.name.split(" ")[0].toUpperCase()} TO CAPTURE
@@ -267,10 +267,6 @@ const styles = StyleSheet.create({
   durationText: { fontSize: 14, fontWeight: "600" as const },
   sendBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16, borderRadius: 16 },
   sendBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" as const },
-  sentRow: { alignItems: "center", gap: 10, paddingVertical: 12 },
-  sentIcon: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  sentTitle: { fontSize: 17, fontWeight: "700" as const, letterSpacing: -0.2 },
-  sentSub: { fontSize: 13, textAlign: "center" as const },
 });
 
 const darkMapStyle = [

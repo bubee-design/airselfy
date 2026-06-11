@@ -49,6 +49,7 @@ interface SocketContextType {
   nearbyUsers: NearbyUser[];
   isConnected: boolean;
   pendingRequest: IncomingRequest | null;
+  lastReceivedAt: number | null;
   sendRequest: (targetUserId: string, type: "photo" | "video", duration: number) => void;
   acceptRequest: () => void;
   declineRequest: () => void;
@@ -59,6 +60,7 @@ const SocketContext = createContext<SocketContextType>({
   nearbyUsers: [],
   isConnected: false,
   pendingRequest: null,
+  lastReceivedAt: null,
   sendRequest: () => {},
   acceptRequest: () => {},
   declineRequest: () => {},
@@ -71,6 +73,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [pendingRequest, setPendingRequest] = useState<IncomingRequest | null>(null);
+  const [lastReceivedAt, setLastReceivedAt] = useState<number | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const ownPosRef = useRef<{ lat: number; lon: number } | null>(null);
   const posSubRef = useRef<Location.LocationSubscription | null>(null);
@@ -216,6 +219,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           uri: data.uri,
           ...(data.duration ? { duration: data.duration } : {}),
         });
+        setLastReceivedAt(Date.now());
       }
     );
 
@@ -266,7 +270,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SocketContext.Provider
-      value={{ nearbyUsers, isConnected, pendingRequest, sendRequest, acceptRequest, declineRequest, deliverMedia }}
+      value={{ nearbyUsers, isConnected, pendingRequest, lastReceivedAt, sendRequest, acceptRequest, declineRequest, deliverMedia }}
     >
       {children}
     </SocketContext.Provider>

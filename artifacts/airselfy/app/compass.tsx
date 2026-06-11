@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useSocket } from "@/context/SocketContext";
 
 const BASE_LAT = 37.7749;
 const BASE_LON = -122.4194;
@@ -59,11 +60,22 @@ export default function CompassScreen() {
     targetLat: string;
     targetLon: string;
     requesterId: string;
+    mode: string;
   }>();
 
   const { userName = "User", type = "photo", duration = "10" } = params;
   const targetLat = parseFloat(params.targetLat ?? String(BASE_LAT + 0.0012));
   const targetLon = parseFloat(params.targetLon ?? String(BASE_LON + 0.0008));
+  const isRequester = params.mode === "requester";
+
+  const { lastReceivedAt } = useSocket();
+  // Snapshot the value at mount — only react to changes that happen after
+  const initialReceivedAtRef = useRef(lastReceivedAt);
+  useEffect(() => {
+    if (isRequester && lastReceivedAt !== null && lastReceivedAt !== initialReceivedAtRef.current) {
+      router.replace("/(tabs)/album");
+    }
+  }, [lastReceivedAt]);
 
   const initialDist = Math.round(getDistanceM(BASE_LAT, BASE_LON, targetLat, targetLon));
 
@@ -284,10 +296,29 @@ export default function CompassScreen() {
               { backgroundColor: colors.background + "F0", opacity: arrivedAnim },
             ]}
           >
-            <View style={[styles.arrivedIconWrap, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}>
-              <Feather name={type === "photo" ? "camera" : "video"} size={36} color={colors.primary} />
+            <View
+              style={[
+                styles.arrivedIconWrap,
+                {
+                  backgroundColor: (isRequester ? colors.accent : colors.primary) + "22",
+                  borderColor: (isRequester ? colors.accent : colors.primary) + "44",
+                },
+              ]}
+            >
+              <Feather
+                name={isRequester ? "user-check" : (type === "photo" ? "camera" : "video")}
+                size={36}
+                color={isRequester ? colors.accent : colors.primary}
+              />
             </View>
-            <Text style={[styles.arrivedText, { color: colors.foreground }]}>Camera Unlocked</Text>
+            <Text style={[styles.arrivedText, { color: colors.foreground }]}>
+              {isRequester ? "In Position" : "Camera Unlocked"}
+            </Text>
+            {isRequester && (
+              <Text style={{ color: colors.mutedForeground, fontSize: 13, marginTop: 2, fontFamily: "Inter_400Regular" }}>
+                Waiting for capture…
+              </Text>
+            )}
           </Animated.View>
         )}
       </View>
@@ -310,8 +341,10 @@ export default function CompassScreen() {
           <Text style={[styles.statusTitle, { color: colors.foreground }]}>
             {type === "photo" ? "Photo" : `Video · ${duration}s`} Request
           </Text>
-          <Text style={[styles.statusSub, { color: arrived ? colors.primary : colors.mutedForeground }]}>
-            {arrived ? "In range · open camera below" : `Navigate to ${userName}'s location`}
+          <Text style={[styles.statusSub, { color: arrived ? (isRequester ? colors.accent : colors.primary) : colors.mutedForeground }]}>
+            {arrived
+              ? (isRequester ? "In range · waiting for capture" : "In range · open camera below")
+              : `Navigate to ${userName}'s location`}
           </Text>
         </View>
         <View style={styles.liveBadge}>
@@ -334,8 +367,8 @@ export default function CompassScreen() {
         ))}
       </View>
 
-      {/* Continue button (shows when arrived) */}
-      {arrived && (
+      {/* Continue button (fulfiller only — opens camera) */}
+      {arrived && !isRequester && (
         <Pressable onPress={handleContinue} style={{ paddingHorizontal: 20 }}>
           <LinearGradient
             colors={type === "photo" ? [colors.primary, colors.accent] : [colors.accent, "#FF6B6B"]}
