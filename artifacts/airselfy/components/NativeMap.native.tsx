@@ -15,6 +15,7 @@ import {
 import MapView, { Circle, Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NearbyUser, useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 const DEFAULT_REGION = {
@@ -28,6 +29,7 @@ export default function NativeMap() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { nearbyUsers } = useApp();
+  const { user } = useAuth();
 
   const [region, setRegion] = useState(DEFAULT_REGION);
   const [locationGranted, setLocationGranted] = useState(false);
@@ -90,7 +92,7 @@ export default function NativeMap() {
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_DEFAULT}
         region={region}
-        showsUserLocation={locationGranted}
+        showsUserLocation={false}
         showsMyLocationButton={false}
         customMapStyle={darkMapStyle}
       >
@@ -101,6 +103,25 @@ export default function NativeMap() {
           fillColor={colors.primary + "08"}
           strokeWidth={1}
         />
+        {/* "You" balloon at user's current location */}
+        {locationGranted && (
+          <Marker
+            coordinate={{ latitude: region.latitude, longitude: region.longitude }}
+            tracksViewChanges={false}
+            anchor={{ x: 0.5, y: 1 }}
+          >
+            <View style={styles.markerWrap}>
+              <View style={[styles.youBalloon, { backgroundColor: colors.primary, borderColor: "#fff" }]}>
+                <Text style={styles.balloonText}>{user?.initials ?? "ME"}</Text>
+              </View>
+              <View style={styles.youLabel}>
+                <Text style={[styles.youLabelText, { color: colors.primary }]}>You</Text>
+              </View>
+              <View style={[styles.balloonTail, { backgroundColor: colors.primary }]} />
+              <View style={[styles.balloonKnot, { backgroundColor: colors.primary }]} />
+            </View>
+          </Marker>
+        )}
         {nearbyUsers.map((u) => (
           <Marker
             key={u.id}
@@ -206,6 +227,9 @@ export default function NativeMap() {
 const styles = StyleSheet.create({
   markerWrap: { alignItems: "center" },
   balloon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.3)" },
+  youBalloon: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center", borderWidth: 2.5 },
+  youLabel: { position: "absolute", top: -18, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 },
+  youLabelText: { fontSize: 9, fontWeight: "700" as const, letterSpacing: 0.5 },
   balloonText: { color: "#fff", fontWeight: "700" as const, fontSize: 12 },
   balloonTail: { width: 2, height: 10, opacity: 0.7 },
   balloonKnot: { width: 6, height: 6, borderRadius: 3, opacity: 0.5 },

@@ -12,11 +12,13 @@ import {
   View,
 } from "react-native";
 import { NearbyUser, useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function NativeMap() {
   const colors = useColors();
   const { nearbyUsers } = useApp();
+  const { user } = useAuth();
   const [selected, setSelected] = useState<NearbyUser | null>(null);
   const [mediaType, setMediaType] = useState<"photo" | "video" | null>(null);
   const [duration, setDuration] = useState<number>(10);
@@ -55,6 +57,17 @@ export default function NativeMap() {
         contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
       >
+        {/* "You" card */}
+        <View style={[styles.userCard, styles.youCard, { backgroundColor: colors.card, borderColor: colors.primary + "60" }]}>
+          <LinearGradient colors={[colors.primary + "20", "transparent"]} style={StyleSheet.absoluteFillObject} />
+          <View style={[styles.avatar, { backgroundColor: colors.primary + "25", borderColor: colors.primary + "60" }]}>
+            <Text style={[styles.avatarText, { color: colors.primary }]}>{user?.initials ?? "ME"}</Text>
+          </View>
+          <Text style={[styles.userName, { color: colors.foreground }]}>{user?.name?.split(" ")[0] ?? "You"}</Text>
+          <View style={[styles.youBadge, { backgroundColor: colors.primary + "20", borderColor: colors.primary + "40" }]}>
+            <Text style={[styles.youBadgeText, { color: colors.primary }]}>You</Text>
+          </View>
+        </View>
         {nearbyUsers.map((u) => (
           <Pressable
             key={u.id}
@@ -156,6 +169,9 @@ export default function NativeMap() {
 const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", padding: 16, gap: 12 },
   userCard: { width: "47%", borderRadius: 18, borderWidth: 1, padding: 16, alignItems: "center", gap: 8, overflow: "hidden" },
+  youCard: { borderWidth: 1.5 },
+  youBadge: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3 },
+  youBadgeText: { fontSize: 11, fontWeight: "700" as const, letterSpacing: 0.5 },
   avatar: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   avatarText: { fontWeight: "700" as const, fontSize: 16 },
   userName: { fontSize: 14, fontWeight: "600" as const, textAlign: "center" },
