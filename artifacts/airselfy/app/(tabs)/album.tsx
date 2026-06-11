@@ -48,7 +48,8 @@ function isRealUri(uri: string): boolean {
     uri.startsWith("file://") ||
     uri.startsWith("content://") ||
     uri.startsWith("http://") ||
-    uri.startsWith("https://")
+    uri.startsWith("https://") ||
+    uri.startsWith("data:")
   );
 }
 

@@ -54,7 +54,7 @@ interface SocketContextType {
   sendRequest: (targetUserId: string, type: "photo" | "video", duration: number) => void;
   acceptRequest: () => void;
   declineRequest: () => void;
-  deliverMedia: (requesterId: string, type: "photo" | "video", duration: number) => void;
+  deliverMedia: (requesterId: string, type: "photo" | "video", duration: number, uri: string) => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
@@ -66,7 +66,7 @@ const SocketContext = createContext<SocketContextType>({
   sendRequest: () => {},
   acceptRequest: () => {},
   declineRequest: () => {},
-  deliverMedia: () => {},
+  deliverMedia: () => { },
 });
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
@@ -124,8 +124,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     setPendingRequest(null);
   }
 
-  function deliverMedia(requesterId: string, type: "photo" | "video", duration: number) {
-    socketRef.current?.emit("photo_delivered", { requesterId, type, duration });
+  function deliverMedia(requesterId: string, type: "photo" | "video", duration: number, uri: string) {
+    socketRef.current?.emit("photo_delivered", { requesterId, type, duration, uri });
   }
 
   // ── Socket lifecycle ──────────────────────────────────────────────────────

@@ -18,7 +18,7 @@ import { useColors } from "@/hooks/useColors";
 
 // Lazy import camera on native only
 type CameraViewRef = {
-  takePictureAsync: () => Promise<{ uri: string }>;
+  takePictureAsync: (opts?: { base64?: boolean; quality?: number }) => Promise<{ uri: string; base64?: string }>;
   recordAsync: (opts: { maxDuration: number }) => Promise<{ uri: string }>;
   stopRecording: () => void;
 };
@@ -53,6 +53,8 @@ export default function CameraScreen() {
   const flashAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Thumbnail URI captured before video recording starts (to send as album preview)
+  const thumbnailUriRef = useRef<string>("");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -89,18 +91,27 @@ export default function CameraScreen() {
     if (type === "photo") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       triggerFlash();
-      let uri = "placeholder://photo";
+      let uri = "";
       if (Platform.OS !== "web" && cameraRef.current) {
         try {
-          const result = await cameraRef.current.takePictureAsync();
-          uri = result.uri;
+          const result = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.5 });
+          uri = result.base64 ? `data:image/jpeg;base64,${result.base64}` : result.uri;
         } catch {}
       }
       setCaptured(true);
-      if (requesterId) deliverMedia(requesterId, "photo", 0);
+      if (requesterId) deliverMedia(requesterId, "photo", 0, uri);
       setTimeout(() => router.replace("/(tabs)/album"), 800);
     } else {
       if (!recording) {
+        // Snap a still thumbnail before recording starts (used as video album preview)
+        thumbnailUriRef.current = "";
+        if (Platform.OS !== "web" && cameraRef.current) {
+          try {
+            const snap = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.3 });
+            thumbnailUriRef.current = snap.base64 ? `data:image/jpeg;base64,${snap.base64}` : snap.uri;
+          } catch {}
+        }
+
         setRecording(true);
         setElapsed(0);
         progressAnim.setValue(0);
@@ -123,26 +134,31 @@ export default function CameraScreen() {
 
         if (Platform.OS !== "web" && cameraRef.current) {
           try {
-            const result = await cameraRef.current.recordAsync({ maxDuration: duration });
-            if (requesterId) deliverMedia(requesterId, "video", duration);
+            // recordAsync resolves when stopRecording() is called (by timer or user tap)
+            await cameraRef.current.recordAsync({ maxDuration: duration });
+            // Only deliver here — stopRecording does NOT deliver on native
+            if (requesterId) deliverMedia(requesterId, "video", duration, thumbnailUriRef.current);
+            setTimeout(() => router.replace("/(tabs)/album"), 600);
           } catch {}
-        } else {
-          // Web fallback: simulate recording
         }
+        // Web: stopRecording handles delivery + navigation
       } else {
         stopRecording();
       }
     }
   }
 
-  async function stopRecording() {
+  function stopRecording() {
     if (timerRef.current) clearInterval(timerRef.current);
     setRecording(false);
     if (Platform.OS !== "web") {
+      // Triggers recordAsync to resolve → delivery + navigation handled there
       try { cameraRef.current?.stopRecording(); } catch {}
+    } else {
+      // Web fallback: no recordAsync, deliver and navigate here
+      if (requesterId) deliverMedia(requesterId, "video", duration, "");
+      setTimeout(() => router.replace("/(tabs)/album"), 600);
     }
-    if (requesterId) deliverMedia(requesterId, "video", duration);
-    setTimeout(() => router.replace("/(tabs)/album"), 600);
   }
 
   const progressWidth = progressAnim.interpolate({
