@@ -11,13 +11,13 @@ import {
   Text,
   View,
 } from "react-native";
-import { NearbyUser, useApp } from "@/context/AppContext";
+import { NearbyUser, useSocket } from "@/context/SocketContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function NativeMap() {
   const colors = useColors();
-  const { nearbyUsers } = useApp();
+  const { nearbyUsers } = useSocket();
   const { user } = useAuth();
   const [selected, setSelected] = useState<NearbyUser | null>(null);
   const [mediaType, setMediaType] = useState<"photo" | "video" | null>(null);
@@ -45,7 +45,14 @@ export default function NativeMap() {
     closeSheet();
     router.push({
       pathname: "/compass",
-      params: { userId: selected.id, userName: selected.name, type, duration: String(dur ?? duration) },
+      params: {
+        userId: selected.id,
+        userName: selected.name,
+        type,
+        duration: String(dur ?? duration),
+        targetLat: String(selected.lat),
+        targetLon: String(selected.lon),
+      },
     });
   }
 

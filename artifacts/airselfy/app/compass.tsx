@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -15,6 +16,38 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 
+const BASE_LAT = 37.7749;
+const BASE_LON = -122.4194;
+
+function toRad(d: number) {
+  return (d * Math.PI) / 180;
+}
+
+function getBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const φ1 = toRad(lat1), φ2 = toRad(lat2);
+  const Δλ = toRad(lon2 - lon1);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+}
+
+function getDistanceM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Compute shortest rotation delta so we always spin the short way */
+function shortestDelta(from: number, to: number): number {
+  let delta = (to - (from % 360) + 360) % 360;
+  if (delta > 180) delta -= 360;
+  return delta;
+}
+
 export default function CompassScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -23,72 +56,54 @@ export default function CompassScreen() {
     userName: string;
     type: string;
     duration: string;
+    targetLat: string;
+    targetLon: string;
   }>();
 
   const { userName = "User", type = "photo", duration = "10" } = params;
+  const targetLat = parseFloat(params.targetLat ?? String(BASE_LAT + 0.0012));
+  const targetLon = parseFloat(params.targetLon ?? String(BASE_LON + 0.0008));
 
-  const [distance, setDistance] = useState(280);
-  const [heading, setHeading] = useState(45);
+  const initialDist = Math.round(getDistanceM(BASE_LAT, BASE_LON, targetLat, targetLon));
+
+  const [distance, setDistance] = useState(initialDist || 280);
+  const [deviceHeading, setDeviceHeading] = useState(0);
+  const [targetBearing, setTargetBearing] = useState(
+    getBearing(BASE_LAT, BASE_LON, targetLat, targetLon)
+  );
   const [arrived, setArrived] = useState(false);
-  const rotateAnim = useRef(new Animated.Value(45)).current;
+
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const rawRotRef = useRef(0);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const arrivedAnim = useRef(new Animated.Value(0)).current;
+  const ownPosRef = useRef({ lat: BASE_LAT, lon: BASE_LON });
+  const arrivedRef = useRef(false);
+  const headingSubRef = useRef<Location.LocationSubscription | null>(null);
+  const posSubRef = useRef<Location.LocationSubscription | null>(null);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  // Use native magnetometer on mobile, simulate on web
+  function animateNeedle(toAngle: number) {
+    const delta = shortestDelta(rawRotRef.current, toAngle);
+    rawRotRef.current = rawRotRef.current + delta;
+    Animated.timing(rotateAnim, {
+      toValue: rawRotRef.current,
+      duration: 200,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  }
+
+  function markArrived() {
+    if (arrivedRef.current) return;
+    arrivedRef.current = true;
+    setArrived(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Animated.spring(arrivedAnim, { toValue: 1, useNativeDriver: true }).start();
+  }
+
   useEffect(() => {
-    let sub: { remove: () => void } | null = null;
-
-    async function startCompass() {
-      if (Platform.OS !== "web") {
-        try {
-          const { Magnetometer } = await import("expo-sensors");
-          Magnetometer.setUpdateInterval(200);
-          sub = Magnetometer.addListener(({ x, y }) => {
-            let angle = Math.atan2(y, x) * (180 / Math.PI);
-            if (angle < 0) angle += 360;
-            setHeading(Math.round(angle));
-            Animated.timing(rotateAnim, {
-              toValue: angle,
-              duration: 300,
-              easing: Easing.out(Easing.quad),
-              useNativeDriver: true,
-            }).start();
-          });
-        } catch {}
-      } else {
-        // Simulate heading change on web
-        let angle = 45;
-        const interval = setInterval(() => {
-          angle = (angle + (Math.random() - 0.3) * 15 + 360) % 360;
-          setHeading(Math.round(angle));
-          Animated.timing(rotateAnim, {
-            toValue: angle,
-            duration: 400,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }).start();
-        }, 600);
-        return () => clearInterval(interval);
-      }
-    }
-
-    const cleanup = startCompass();
-
-    // Simulate distance closing in
-    const distInterval = setInterval(() => {
-      setDistance((d) => {
-        const next = Math.max(0, d - Math.floor(Math.random() * 8 + 2));
-        if (next <= 10 && !arrived) {
-          setArrived(true);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Animated.spring(arrivedAnim, { toValue: 1, useNativeDriver: true }).start();
-        }
-        return next;
-      });
-    }, 800);
-
     // Pulse animation
     Animated.loop(
       Animated.sequence([
@@ -97,16 +112,91 @@ export default function CompassScreen() {
       ])
     ).start();
 
+    if (Platform.OS === "web") {
+      // Web: simulate heading drift, use real bearing math from base position
+      const bearing = getBearing(BASE_LAT, BASE_LON, targetLat, targetLon);
+      let simHeading = Math.random() * 360;
+      let simDist = initialDist || 280;
+
+      const headingInterval = setInterval(() => {
+        simHeading = (simHeading + (Math.random() - 0.3) * 15 + 360) % 360;
+        setDeviceHeading(Math.round(simHeading));
+        setTargetBearing(bearing);
+        const needle = (bearing - simHeading + 360) % 360;
+        animateNeedle(needle);
+      }, 600);
+
+      const distInterval = setInterval(() => {
+        simDist = Math.max(0, simDist - Math.floor(Math.random() * 8 + 2));
+        setDistance(simDist);
+        if (simDist <= 10) markArrived();
+      }, 800);
+
+      return () => {
+        clearInterval(headingInterval);
+        clearInterval(distInterval);
+      };
+    }
+
+    // Native: real GPS heading + position
+    async function startNative() {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return;
+
+      // Snapshot initial position
+      try {
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const { latitude, longitude } = loc.coords;
+        ownPosRef.current = { lat: latitude, lon: longitude };
+        const dist = Math.round(getDistanceM(latitude, longitude, targetLat, targetLon));
+        const bearing = getBearing(latitude, longitude, targetLat, targetLon);
+        setDistance(dist);
+        setTargetBearing(bearing);
+        if (dist <= 15) markArrived();
+      } catch {}
+
+      // Watch heading (fast, ~5Hz)
+      headingSubRef.current = await Location.watchHeadingAsync((h) => {
+        const dh = h.trueHeading >= 0 ? h.trueHeading : h.magHeading;
+        setDeviceHeading(Math.round(dh));
+
+        const bearing = getBearing(
+          ownPosRef.current.lat,
+          ownPosRef.current.lon,
+          targetLat,
+          targetLon
+        );
+        setTargetBearing(bearing);
+        const needle = (bearing - dh + 360) % 360;
+        animateNeedle(needle);
+      });
+
+      // Watch position (slower, for distance updates)
+      posSubRef.current = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Balanced, timeInterval: 3000, distanceInterval: 3 },
+        (loc) => {
+          const { latitude, longitude } = loc.coords;
+          ownPosRef.current = { lat: latitude, lon: longitude };
+          const dist = Math.round(getDistanceM(latitude, longitude, targetLat, targetLon));
+          setDistance(dist);
+          if (dist <= 15) markArrived();
+        }
+      );
+    }
+
+    startNative();
+
     return () => {
-      sub?.remove();
-      clearInterval(distInterval);
-      cleanup?.then?.((fn) => fn?.());
+      headingSubRef.current?.remove();
+      posSubRef.current?.remove();
     };
   }, []);
 
   const compassRotate = rotateAnim.interpolate({
-    inputRange: [0, 360],
-    outputRange: ["0deg", "360deg"],
+    inputRange: [-3600, 3600],
+    outputRange: ["-3600deg", "3600deg"],
   });
 
   function handleContinue() {
@@ -167,7 +257,7 @@ export default function CompassScreen() {
           {/* Glow circle */}
           <Animated.View style={[styles.glowCircle, { borderColor: colors.primary + "30", transform: [{ scale: pulseAnim }] }]} />
 
-          {/* Arrow */}
+          {/* Arrow — rotates to point at target */}
           <Animated.View style={[styles.arrowWrap, { transform: [{ rotate: compassRotate }] }]}>
             <LinearGradient
               colors={[colors.primary, colors.accent]}
@@ -227,8 +317,8 @@ export default function CompassScreen() {
       {/* Stats row */}
       <View style={styles.statsRow}>
         {[
-          { label: "Heading", value: `${heading}°` },
-          { label: "Bearing", value: heading < 45 || heading > 315 ? "N" : heading < 135 ? "E" : heading < 225 ? "S" : "W" },
+          { label: "Heading", value: `${deviceHeading}°` },
+          { label: "Bearing", value: `${Math.round(targetBearing)}°` },
           { label: "Distance", value: `${distance}m` },
         ].map(({ label, value }) => (
           <View key={label} style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>

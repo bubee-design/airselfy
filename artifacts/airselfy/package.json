@@ -58,6 +58,7 @@
   "dependencies": {
     "expo-camera": "^17.0.10",
     "expo-sensors": "^15.0.8",
-    "react-native-maps": "1.18.0"
+    "react-native-maps": "1.18.0",
+    "socket.io-client": "^4.8.3"
   }
 }

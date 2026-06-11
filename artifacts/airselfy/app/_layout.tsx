@@ -16,6 +16,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AppProvider } from "@/context/AppContext";
+import { SocketProvider } from "@/context/SocketContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -72,7 +73,9 @@ export default function RootLayout() {
             <KeyboardProvider>
               <AuthProvider>
                 <AppProvider>
-                  <RootLayoutNav />
+                  <SocketProvider>
+                    <RootLayoutNav />
+                  </SocketProvider>
                 </AppProvider>
               </AuthProvider>
             </KeyboardProvider>

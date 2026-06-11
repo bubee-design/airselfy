@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import MapView, { Circle, Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NearbyUser, useApp } from "@/context/AppContext";
+import { NearbyUser, useSocket } from "@/context/SocketContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -28,7 +28,7 @@ const DEFAULT_REGION = {
 export default function NativeMap() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { nearbyUsers } = useApp();
+  const { nearbyUsers } = useSocket();
   const { user } = useAuth();
 
   const [region, setRegion] = useState(DEFAULT_REGION);
@@ -80,7 +80,14 @@ export default function NativeMap() {
     closeSheet();
     router.push({
       pathname: "/compass",
-      params: { userId: selected.id, userName: selected.name, type, duration: String(dur ?? duration) },
+      params: {
+        userId: selected.id,
+        userName: selected.name,
+        type,
+        duration: String(dur ?? duration),
+        targetLat: String(selected.lat),
+        targetLon: String(selected.lon),
+      },
     });
   }
 
@@ -125,7 +132,7 @@ export default function NativeMap() {
         {nearbyUsers.map((u) => (
           <Marker
             key={u.id}
-            coordinate={{ latitude: region.latitude + u.latOffset, longitude: region.longitude + u.lonOffset }}
+            coordinate={{ latitude: u.lat, longitude: u.lon }}
             onPress={() => openSheet(u)}
             tracksViewChanges={false}
           >
