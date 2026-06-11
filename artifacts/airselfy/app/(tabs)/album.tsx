@@ -1,9 +1,12 @@
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
   FlatList,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -40,20 +43,63 @@ function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function isRealUri(uri: string): boolean {
+  return (
+    uri.startsWith("file://") ||
+    uri.startsWith("content://") ||
+    uri.startsWith("http://") ||
+    uri.startsWith("https://")
+  );
+}
+
 export default function AlbumScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { albumItems } = useApp();
+  const { albumItems, deleteAlbumItem, albumLoading } = useApp();
   const [selected, setSelected] = useState<AlbumItem | null>(null);
   const [filter, setFilter] = useState<"all" | "photo" | "video">("all");
+  const [deleting, setDeleting] = useState(false);
+
+  // Expand animation
+  const scaleAnim = useRef(new Animated.Value(0.86)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 100 : 100;
-
   const filtered = filter === "all" ? albumItems : albumItems.filter((i) => i.type === filter);
 
   function itemColor(item: AlbumItem) {
     return ITEM_COLORS[String(parseInt(item.id) % 6)] ?? colors.primary;
+  }
+
+  function openItem(item: AlbumItem) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    scaleAnim.setValue(0.86);
+    opacityAnim.setValue(0);
+    setSelected(item);
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 110,
+        friction: 11,
+      }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 160, useNativeDriver: true }),
+    ]).start();
+  }
+
+  function closeItem() {
+    Animated.parallel([
+      Animated.timing(scaleAnim, { toValue: 0.92, duration: 140, useNativeDriver: true }),
+      Animated.timing(opacityAnim, { toValue: 0, duration: 140, useNativeDriver: true }),
+    ]).start(() => setSelected(null));
+  }
+
+  async function handleDelete(item: AlbumItem) {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setDeleting(true);
+    await deleteAlbumItem(item.id);
+    setDeleting(false);
+    closeItem();
   }
 
   return (
@@ -63,7 +109,7 @@ export default function AlbumScreen() {
         <View>
           <Text style={[styles.title, { color: colors.foreground }]}>Your Album</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-            {albumItems.length} item{albumItems.length !== 1 ? "s" : ""} · requested by you
+            {albumLoading ? "Syncing…" : `${albumItems.length} item${albumItems.length !== 1 ? "s" : ""} · captured for you`}
           </Text>
         </View>
       </View>
@@ -94,7 +140,7 @@ export default function AlbumScreen() {
           <Feather name="image" size={40} color={colors.muted} />
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No captures yet</Text>
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            Photos and videos taken for you will appear here.
+            Photos and videos captured for you will appear here.
           </Text>
         </View>
       ) : (
@@ -102,14 +148,15 @@ export default function AlbumScreen() {
           data={filtered}
           keyExtractor={(i) => i.id}
           numColumns={2}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomPad, gap: 12 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, gap: 12 }}
           columnWrapperStyle={{ gap: 12 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             const col = itemColor(item);
+            const hasImage = isRealUri(item.uri);
             return (
               <Pressable
-                onPress={() => setSelected(item)}
+                onPress={() => openItem(item)}
                 style={({ pressed }) => [
                   styles.gridItem,
                   {
@@ -117,24 +164,31 @@ export default function AlbumScreen() {
                     borderColor: colors.border,
                     width: ITEM_SIZE,
                     height: ITEM_SIZE,
-                    opacity: pressed ? 0.85 : 1,
+                    transform: [{ scale: pressed ? 0.96 : 1 }],
                   },
                 ]}
               >
-                {/* Simulated media preview */}
-                <LinearGradient
-                  colors={[col + "18", col + "06"]}
-                  style={StyleSheet.absoluteFillObject}
-                />
-                <View style={[styles.gridIcon, { backgroundColor: col + "20", borderColor: col + "40" }]}>
-                  <Feather name={item.type === "photo" ? "camera" : "video"} size={24} color={col} />
-                </View>
+                {hasImage ? (
+                  <Image
+                    source={{ uri: item.uri }}
+                    style={StyleSheet.absoluteFillObject}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <>
+                    <LinearGradient
+                      colors={[col + "18", col + "06"]}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                    <View style={[styles.gridIcon, { backgroundColor: col + "20", borderColor: col + "40" }]}>
+                      <Feather name={item.type === "photo" ? "camera" : "video"} size={24} color={col} />
+                    </View>
+                  </>
+                )}
 
                 {/* Type badge */}
                 <View style={[styles.badge, { backgroundColor: "#00000066" }]}>
-                  {item.type === "video" && (
-                    <View style={styles.recDot} />
-                  )}
+                  {item.type === "video" && <View style={styles.recDot} />}
                   <Text style={styles.badgeText}>
                     {item.type === "photo" ? "Photo" : `${item.duration ?? ""}s`}
                   </Text>
@@ -154,60 +208,107 @@ export default function AlbumScreen() {
         />
       )}
 
-      {/* Detail modal */}
-      <Modal visible={!!selected} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
+      {/* Expand modal */}
+      <Modal
+        visible={!!selected}
+        transparent
+        animationType="none"
+        onRequestClose={closeItem}
+        statusBarTranslucent
+      >
         {selected && (
-          <View style={[styles.modal, { backgroundColor: "#000000EE" }]}>
-            {/* Top bar */}
-            <View style={[styles.modalTop, { paddingTop: topPad + 8 }]}>
-              <Pressable onPress={() => setSelected(null)} style={styles.closeBtn}>
-                <Feather name="x" size={20} color="#fff" />
-              </Pressable>
-              <View style={{ alignItems: "center" }}>
-                <Text style={styles.modalBy}>By: {selected.byName}</Text>
-                <Text style={styles.modalDate}>
-                  {formatDate(selected.createdAt)} · {formatTime(selected.createdAt)}
-                </Text>
-              </View>
-              <Pressable style={styles.closeBtn}>
-                <Feather name="more-horizontal" size={20} color="#fff" />
-              </Pressable>
-            </View>
-
-            {/* Preview */}
-            <View style={styles.previewWrap}>
-              <LinearGradient
-                colors={[itemColor(selected) + "15", itemColor(selected) + "05"]}
-                style={styles.preview}
-              >
-                <View style={[styles.previewIcon, { backgroundColor: itemColor(selected) + "20", borderColor: itemColor(selected) + "40" }]}>
-                  <Feather
-                    name={selected.type === "photo" ? "camera" : "video"}
-                    size={48}
-                    color={itemColor(selected)}
-                  />
+          <Animated.View
+            style={[styles.modalBackdrop, { opacity: opacityAnim }]}
+          >
+            <Animated.View
+              style={[
+                styles.modalInner,
+                { transform: [{ scale: scaleAnim }] },
+              ]}
+            >
+              {/* Top bar */}
+              <View style={[styles.modalTop, { paddingTop: topPad + 8 }]}>
+                <Pressable onPress={closeItem} style={styles.circleBtn}>
+                  <Feather name="x" size={20} color="#fff" />
+                </Pressable>
+                <View style={{ alignItems: "center" }}>
+                  <Text style={styles.modalBy}>By: {selected.byName}</Text>
+                  <Text style={styles.modalDate}>
+                    {formatDate(selected.createdAt)} · {formatTime(selected.createdAt)}
+                  </Text>
                 </View>
-                <Text style={[styles.previewLabel, { color: itemColor(selected) + "99" }]}>
-                  {selected.type === "photo" ? "Photo captured" : `Video · ${selected.duration ?? ""}s`}
-                </Text>
-              </LinearGradient>
-            </View>
+                <View style={styles.circleBtn} />
+              </View>
 
-            {/* Actions */}
-            <View style={[styles.actionRow, { paddingBottom: insets.bottom + 20 }]}>
-              <Pressable style={[styles.actionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Feather name="download" size={18} color={colors.foreground} />
-                <Text style={[styles.actionText, { color: colors.foreground }]}>Save</Text>
-              </Pressable>
-              <Pressable style={[styles.actionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Feather name="share-2" size={18} color={colors.foreground} />
-                <Text style={[styles.actionText, { color: colors.foreground }]}>Share</Text>
-              </Pressable>
-              <Pressable style={[styles.actionBtn, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "30" }]}>
-                <Feather name="trash-2" size={18} color={colors.destructive} />
-              </Pressable>
-            </View>
-          </View>
+              {/* Preview */}
+              <View style={styles.previewWrap}>
+                {isRealUri(selected.uri) ? (
+                  <Image
+                    source={{ uri: selected.uri }}
+                    style={[
+                      styles.realImage,
+                      { borderColor: "rgba(255,255,255,0.08)" },
+                    ]}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <LinearGradient
+                    colors={[itemColor(selected) + "15", itemColor(selected) + "05"]}
+                    style={styles.preview}
+                  >
+                    <View
+                      style={[
+                        styles.previewIcon,
+                        {
+                          backgroundColor: itemColor(selected) + "20",
+                          borderColor: itemColor(selected) + "40",
+                        },
+                      ]}
+                    >
+                      <Feather
+                        name={selected.type === "photo" ? "camera" : "video"}
+                        size={48}
+                        color={itemColor(selected)}
+                      />
+                    </View>
+                    <Text style={[styles.previewLabel, { color: itemColor(selected) + "99" }]}>
+                      {selected.type === "photo" ? "Photo captured" : `Video · ${selected.duration ?? ""}s`}
+                    </Text>
+                  </LinearGradient>
+                )}
+              </View>
+
+              {/* Actions */}
+              <View style={[styles.actionRow, { paddingBottom: insets.bottom + 20 }]}>
+                <Pressable
+                  style={[styles.actionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                >
+                  <Feather name="download" size={18} color={colors.foreground} />
+                  <Text style={[styles.actionText, { color: colors.foreground }]}>Save</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.actionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                >
+                  <Feather name="share-2" size={18} color={colors.foreground} />
+                  <Text style={[styles.actionText, { color: colors.foreground }]}>Share</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleDelete(selected)}
+                  disabled={deleting}
+                  style={[
+                    styles.actionBtnSquare,
+                    {
+                      backgroundColor: colors.destructive + "15",
+                      borderColor: colors.destructive + "30",
+                      opacity: deleting ? 0.5 : 1,
+                    },
+                  ]}
+                >
+                  <Feather name="trash-2" size={18} color={colors.destructive} />
+                </Pressable>
+              </View>
+            </Animated.View>
+          </Animated.View>
         )}
       </Modal>
     </View>
@@ -282,7 +383,11 @@ const styles = StyleSheet.create({
   },
   byText: { color: "#fff", fontSize: 11, fontWeight: "600" as const, fontFamily: "Inter_600SemiBold" },
   timeText: { color: "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "Inter_400Regular" },
-  modal: { flex: 1 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "#000000EE",
+  },
+  modalInner: { flex: 1 },
   modalTop: {
     flexDirection: "row",
     alignItems: "center",
@@ -290,7 +395,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-  closeBtn: {
+  circleBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -309,6 +414,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",
     aspectRatio: 3 / 4,
+  },
+  realImage: {
+    width: "100%",
+    aspectRatio: 3 / 4,
+    borderRadius: 24,
+    borderWidth: 1,
   },
   previewIcon: {
     width: 96,
@@ -334,6 +445,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1,
+  },
+  actionBtnSquare: {
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   actionText: { fontSize: 14, fontWeight: "500" as const, fontFamily: "Inter_500Medium" },
 });
