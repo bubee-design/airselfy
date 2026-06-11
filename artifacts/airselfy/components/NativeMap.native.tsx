@@ -37,17 +37,22 @@ export default function NativeMap() {
   const sheetAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Location.requestForegroundPermissionsAsync().then(({ status }) => {
+    Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
       if (status === "granted") {
         setLocationGranted(true);
-        Location.getCurrentPositionAsync({}).then((loc) => {
+        try {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
           setRegion({
             latitude: loc.coords.latitude,
             longitude: loc.coords.longitude,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           });
-        });
+        } catch {
+          // Location unavailable — keep default region, map still shows nearby users
+        }
       }
     });
   }, []);
