@@ -58,6 +58,7 @@ export default function CompassScreen() {
     duration: string;
     targetLat: string;
     targetLon: string;
+    requesterId: string;
   }>();
 
   const { userName = "User", type = "photo", duration = "10" } = params;
@@ -202,7 +203,12 @@ export default function CompassScreen() {
   function handleContinue() {
     router.replace({
       pathname: "/camera",
-      params: { type, duration, byName: userName },
+      params: {
+        type,
+        duration,
+        byName: userName,
+        requesterId: params.requesterId ?? "",
+      },
     });
   }
 

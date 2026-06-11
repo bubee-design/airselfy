@@ -14,6 +14,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { IncomingRequestModal } from "@/components/IncomingRequestModal";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AppProvider } from "@/context/AppContext";
 import { SocketProvider } from "@/context/SocketContext";
@@ -75,6 +76,7 @@ export default function RootLayout() {
                 <AppProvider>
                   <SocketProvider>
                     <RootLayoutNav />
+                    <IncomingRequestModal />
                   </SocketProvider>
                 </AppProvider>
               </AuthProvider>

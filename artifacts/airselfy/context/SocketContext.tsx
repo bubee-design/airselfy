@@ -1,8 +1,10 @@
 import * as Location from "expo-location";
+import { router } from "expo-router";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus, Platform } from "react-native";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext";
+import { useApp } from "./AppContext";
 
 export interface NearbyUser {
   id: string;
@@ -14,16 +16,14 @@ export interface NearbyUser {
   distanceM: number;
 }
 
-const BASE_LAT = 37.7749;
-const BASE_LON = -122.4194;
-
-const SEED_USERS: NearbyUser[] = [
-  { id: "seed-1", name: "Sam K.", initials: "SK", color: "#FF6B6B", lat: BASE_LAT + 0.0012, lon: BASE_LON + 0.0008, distanceM: 120 },
-  { id: "seed-2", name: "Jordan M.", initials: "JM", color: "#FFB347", lat: BASE_LAT - 0.0018, lon: BASE_LON + 0.0014, distanceM: 240 },
-  { id: "seed-3", name: "Taylor R.", initials: "TR", color: "#4ADEAD", lat: BASE_LAT + 0.0009, lon: BASE_LON - 0.0022, distanceM: 380 },
-  { id: "seed-4", name: "Morgan P.", initials: "MP", color: "#F06EFF", lat: BASE_LAT - 0.0011, lon: BASE_LON - 0.0016, distanceM: 410 },
-  { id: "seed-5", name: "Riley S.", initials: "RS", color: "#5B8DEF", lat: BASE_LAT + 0.002, lon: BASE_LON + 0.0019, distanceM: 470 },
-];
+export interface IncomingRequest {
+  requesterId: string;
+  requesterName: string;
+  requesterLat: number;
+  requesterLon: number;
+  type: "photo" | "video";
+  duration: number;
+}
 
 function getSocketUrl(): string | undefined {
   if (Platform.OS === "web") return undefined;
@@ -48,20 +48,78 @@ function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): num
 interface SocketContextType {
   nearbyUsers: NearbyUser[];
   isConnected: boolean;
+  pendingRequest: IncomingRequest | null;
+  sendRequest: (targetUserId: string, type: "photo" | "video", duration: number) => void;
+  acceptRequest: () => void;
+  declineRequest: () => void;
+  deliverMedia: (requesterId: string, type: "photo" | "video", duration: number) => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
   nearbyUsers: [],
   isConnected: false,
+  pendingRequest: null,
+  sendRequest: () => {},
+  acceptRequest: () => {},
+  declineRequest: () => {},
+  deliverMedia: () => {},
 });
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { addAlbumItem } = useApp();
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [pendingRequest, setPendingRequest] = useState<IncomingRequest | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const ownPosRef = useRef<{ lat: number; lon: number } | null>(null);
   const posSubRef = useRef<Location.LocationSubscription | null>(null);
+  // Keep addAlbumItem in a ref so socket handlers never go stale
+  const addAlbumItemRef = useRef(addAlbumItem);
+  useEffect(() => { addAlbumItemRef.current = addAlbumItem; }, [addAlbumItem]);
+
+  // ── Context-exposed actions ──────────────────────────────────────────────
+
+  function sendRequest(targetUserId: string, type: "photo" | "video", duration: number) {
+    if (!user || !socketRef.current) return;
+    socketRef.current.emit("photo_request", {
+      targetUserId,
+      type,
+      duration,
+      requesterId: user.id,
+      requesterName: user.name,
+      requesterLat: ownPosRef.current?.lat ?? 0,
+      requesterLon: ownPosRef.current?.lon ?? 0,
+    });
+  }
+
+  function acceptRequest() {
+    const req = pendingRequest;
+    if (!req) return;
+    setPendingRequest(null);
+    router.push({
+      pathname: "/compass",
+      params: {
+        userId: req.requesterId,
+        userName: req.requesterName,
+        type: req.type,
+        duration: String(req.duration),
+        targetLat: String(req.requesterLat),
+        targetLon: String(req.requesterLon),
+        requesterId: req.requesterId,
+      },
+    });
+  }
+
+  function declineRequest() {
+    setPendingRequest(null);
+  }
+
+  function deliverMedia(requesterId: string, type: "photo" | "video", duration: number) {
+    socketRef.current?.emit("photo_delivered", { requesterId, type, duration });
+  }
+
+  // ── Socket lifecycle ──────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!user) {
@@ -71,6 +129,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       posSubRef.current = null;
       setIsConnected(false);
       setNearbyUsers([]);
+      setPendingRequest(null);
       return;
     }
 
@@ -89,9 +148,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         name: user.name,
         initials: user.initials,
       });
-      // Re-emit last known position immediately after (re)connect so the server
-      // doesn't reset us to lat:0/lon:0 until the next watchPositionAsync tick.
-      // Critical on iOS 26 where background/foreground cycles trigger reconnects.
       if (ownPosRef.current) {
         socket.emit("location", {
           lat: ownPosRef.current.lat,
@@ -100,39 +156,19 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    socket.on("connect_error", () => {
-      setIsConnected(false);
-    });
-
-    socket.on("disconnect", () => {
-      setIsConnected(false);
-    });
-
-    // iOS 26 backgrounds apps more aggressively. When the user returns to
-    // foreground the socket may still be alive (no reconnect event fires),
-    // but the server entry has grown stale. Push position immediately.
-    function handleAppStateChange(next: AppStateStatus) {
-      if (next === "active" && ownPosRef.current) {
-        socket.emit("location", {
-          lat: ownPosRef.current.lat,
-          lon: ownPosRef.current.lon,
-        });
-      }
-    }
-    const appStateSub = AppState.addEventListener("change", handleAppStateChange);
+    socket.on("connect_error", () => setIsConnected(false));
+    socket.on("disconnect", () => setIsConnected(false));
 
     type RemoteUser = Omit<NearbyUser, "distanceM">;
 
     socket.on("nearby_update", (users: RemoteUser[]) => {
       setNearbyUsers(
-        users.length > 0
-          ? users.map((u) => ({
-              ...u,
-              distanceM: ownPosRef.current
-                ? Math.round(haversineM(ownPosRef.current.lat, ownPosRef.current.lon, u.lat, u.lon))
-                : 0,
-            }))
-          : []
+        users.map((u) => ({
+          ...u,
+          distanceM: ownPosRef.current
+            ? Math.round(haversineM(ownPosRef.current.lat, ownPosRef.current.lon, u.lat, u.lon))
+            : 0,
+        }))
       );
     });
 
@@ -153,13 +189,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     socket.on("user_left", (userId: string) => {
-      setNearbyUsers((prev) =>
-        prev.filter((u) => u.id !== userId)
-      );
+      setNearbyUsers((prev) => prev.filter((u) => u.id !== userId));
     });
 
-    // A new peer just joined — re-emit our current position immediately
-    // so they can see us without waiting for the next watchPositionAsync tick
     socket.on("peer_joined", () => {
       if (ownPosRef.current) {
         socket.emit("location", {
@@ -169,7 +201,36 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Start location watch
+    // ── Request/fulfillment events ─────────────────────────────────────────
+
+    socket.on("incoming_request", (data: IncomingRequest) => {
+      setPendingRequest(data);
+    });
+
+    socket.on(
+      "media_received",
+      (data: { type: "photo" | "video"; duration?: number; byName: string; uri: string }) => {
+        addAlbumItemRef.current({
+          type: data.type,
+          byName: data.byName,
+          uri: data.uri,
+          ...(data.duration ? { duration: data.duration } : {}),
+        });
+      }
+    );
+
+    // ── App-state refresh (iOS 26) ─────────────────────────────────────────
+
+    function handleAppStateChange(next: AppStateStatus) {
+      if (next === "active" && ownPosRef.current) {
+        socket.emit("location", {
+          lat: ownPosRef.current.lat,
+          lon: ownPosRef.current.lon,
+        });
+      }
+    }
+    const appStateSub = AppState.addEventListener("change", handleAppStateChange);
+
     startLocationWatch(socket);
 
     return () => {
@@ -185,48 +246,28 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
 
-      // Emit a position snapshot immediately so we're visible to existing peers
-      // without waiting for the first watchPositionAsync tick (movement/timer)
       try {
         const snap = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
-        ownPosRef.current = {
-          lat: snap.coords.latitude,
-          lon: snap.coords.longitude,
-        };
-        socket.emit("location", {
-          lat: snap.coords.latitude,
-          lon: snap.coords.longitude,
-        });
-      } catch {
-        // GPS unavailable on first snapshot — watch will fill in later
-      }
+        ownPosRef.current = { lat: snap.coords.latitude, lon: snap.coords.longitude };
+        socket.emit("location", { lat: snap.coords.latitude, lon: snap.coords.longitude });
+      } catch {}
 
       posSubRef.current = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 4000,
-          distanceInterval: 5,
-        },
+        { accuracy: Location.Accuracy.Balanced, timeInterval: 4000, distanceInterval: 5 },
         (loc) => {
-          ownPosRef.current = {
-            lat: loc.coords.latitude,
-            lon: loc.coords.longitude,
-          };
-          socket.emit("location", {
-            lat: loc.coords.latitude,
-            lon: loc.coords.longitude,
-          });
+          ownPosRef.current = { lat: loc.coords.latitude, lon: loc.coords.longitude };
+          socket.emit("location", { lat: loc.coords.latitude, lon: loc.coords.longitude });
         }
       );
-    } catch {
-      // Location unavailable — socket still connected, just no position emitted
-    }
+    } catch {}
   }
 
   return (
-    <SocketContext.Provider value={{ nearbyUsers, isConnected }}>
+    <SocketContext.Provider
+      value={{ nearbyUsers, isConnected, pendingRequest, sendRequest, acceptRequest, declineRequest, deliverMedia }}
+    >
       {children}
     </SocketContext.Provider>
   );

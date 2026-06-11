@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
+import { useSocket } from "@/context/SocketContext";
 import { useColors } from "@/hooks/useColors";
 
 // Lazy import camera on native only
@@ -26,12 +27,14 @@ type CameraViewRef = {
 export default function CameraScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ type: string; duration: string; byName: string }>();
+  const params = useLocalSearchParams<{ type: string; duration: string; byName: string; requesterId?: string }>();
   const { addAlbumItem } = useApp();
+  const { deliverMedia } = useSocket();
 
   const type = params.type === "video" ? "video" : "photo";
   const duration = parseInt(params.duration ?? "10", 10);
   const byName = params.byName ?? "Unknown";
+  const requesterId = params.requesterId ?? "";
 
   const [permGranted, setPermGranted] = useState(false);
   const [permLoading, setPermLoading] = useState(true);
@@ -97,6 +100,7 @@ export default function CameraScreen() {
       }
       setCaptured(true);
       await addAlbumItem({ type: "photo", byName, uri });
+      if (requesterId) deliverMedia(requesterId, "photo", 0);
       setTimeout(() => router.replace("/(tabs)/album"), 800);
     } else {
       if (!recording) {
@@ -124,6 +128,7 @@ export default function CameraScreen() {
           try {
             const result = await cameraRef.current.recordAsync({ maxDuration: duration });
             await addAlbumItem({ type: "video", byName, uri: result.uri, duration });
+            if (requesterId) deliverMedia(requesterId, "video", duration);
           } catch {}
         } else {
           // Web fallback: simulate recording
@@ -141,6 +146,7 @@ export default function CameraScreen() {
       try { cameraRef.current?.stopRecording(); } catch {}
     }
     await addAlbumItem({ type: "video", byName, uri: "placeholder://video", duration });
+    if (requesterId) deliverMedia(requesterId, "video", duration);
     setTimeout(() => router.replace("/(tabs)/album"), 600);
   }
 

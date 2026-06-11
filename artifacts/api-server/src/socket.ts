@@ -113,6 +113,59 @@ export function attachSocket(httpServer: HttpServer): Server {
       });
     });
 
+    socket.on(
+      "photo_request",
+      (data: {
+        targetUserId: string;
+        type: string;
+        duration: number;
+        requesterId: string;
+        requesterName: string;
+        requesterLat: number;
+        requesterLon: number;
+      }) => {
+        const target = [...locations.values()].find(
+          (u) => u.userId === data.targetUserId
+        );
+        if (target) {
+          io.to(target.socketId).emit("incoming_request", {
+            requesterId: data.requesterId,
+            requesterName: data.requesterName,
+            requesterLat: data.requesterLat,
+            requesterLon: data.requesterLon,
+            type: data.type,
+            duration: data.duration,
+          });
+          logger.info(
+            { from: data.requesterId, to: data.targetUserId, type: data.type },
+            "Photo request routed"
+          );
+        }
+      }
+    );
+
+    socket.on(
+      "photo_delivered",
+      (data: { requesterId: string; type: string; duration: number }) => {
+        const requester = [...locations.values()].find(
+          (u) => u.userId === data.requesterId
+        );
+        const deliverer = locations.get(socket.id);
+        if (requester && deliverer) {
+          io.to(requester.socketId).emit("media_received", {
+            type: data.type,
+            duration: data.duration,
+            byName: deliverer.name,
+            uri: `placeholder://received-${Date.now()}`,
+          });
+          logger.info(
+            { from: deliverer.userId, to: data.requesterId },
+            "Media delivered"
+          );
+        }
+      }
+    );
+
     socket.on("disconnect", () => {
       const entry = locations.get(socket.id);
       if (entry) {
