@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "airselfy",
+    "slug": "airselfy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "airselfy",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0F"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "airselfy uses your camera to capture photos and videos requested by nearby users.",
+        "NSLocationWhenInUseUsageDescription": "airselfy uses your location to show nearby users on the map and help with navigation.",
+        "NSMicrophoneUsageDescription": "airselfy uses your microphone to record video clips."
+      }
+    },
+    "android": {
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-location",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "airselfy uses your camera to capture photos and videos.",
+          "microphonePermission": "airselfy uses your microphone to record video.",
+          "recordAudioAndroid": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
