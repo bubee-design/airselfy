@@ -41,7 +41,7 @@ export default function HomeScreen() {
           </Text>
         </View>
         {/* Avatar */}
-        <Pressable onPress={() => {}}>
+        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/profile"); }}>
           <LinearGradient
             colors={[colors.primary, colors.accent]}
             start={{ x: 0, y: 0 }}
