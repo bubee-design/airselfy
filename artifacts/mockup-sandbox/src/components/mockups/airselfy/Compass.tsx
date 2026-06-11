@@ -14,7 +14,7 @@ export function Compass() {
   }, []);
 
   useEffect(() => {
-    if (distance < 15) setArrived(true);
+    if (distance <= 100) setArrived(true);
   }, [distance]);
 
   const arrowRotation = heading;
@@ -45,7 +45,6 @@ export function Compass() {
         {/* Outer ring */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 288 288">
           <circle cx="144" cy="144" r="136" stroke="#1E1E30" strokeWidth="2" fill="none" />
-          {/* Tick marks */}
           {Array.from({ length: 36 }).map((_, i) => {
             const angle = (i * 10 * Math.PI) / 180;
             const isMajor = i % 9 === 0;
@@ -56,7 +55,6 @@ export function Compass() {
             const y2 = 144 - r2 * Math.cos(angle);
             return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={isMajor ? "#5B8DEF" : "#252535"} strokeWidth={isMajor ? 2 : 1} />;
           })}
-          {/* Cardinal labels */}
           {[{ label: "N", a: 0 }, { label: "E", a: 90 }, { label: "S", a: 180 }, { label: "W", a: 270 }].map(({ label, a }) => {
             const rad = (a * Math.PI) / 180;
             return (
@@ -68,7 +66,6 @@ export function Compass() {
           })}
         </svg>
 
-        {/* Middle glow circle */}
         <div className="absolute w-52 h-52 rounded-full bg-[#5B8DEF]/5 border border-[#5B8DEF]/15" />
 
         {/* Direction arrow */}
@@ -76,7 +73,6 @@ export function Compass() {
           className="absolute w-44 h-44 flex items-center justify-center transition-transform"
           style={{ transform: `rotate(${arrowRotation}deg)`, transitionDuration: "600ms" }}
         >
-          {/* Arrow */}
           <svg width="48" height="96" viewBox="0 0 48 96" fill="none" className="-mt-12">
             <path d="M24 4L40 52H24V52H8L24 4Z" fill="url(#arrowGrad)" />
             <path d="M24 92L8 52H24H40L24 92Z" fill="#252535" />
@@ -89,39 +85,51 @@ export function Compass() {
           </svg>
         </div>
 
-        {/* Center dot */}
         <div className="absolute w-5 h-5 rounded-full bg-[#141420] border-2 border-[#5B8DEF] z-10" />
 
-        {/* Arrived overlay */}
+        {/* Camera-unlocked overlay */}
         {arrived && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-[#0A0A0F]/90">
-            <div className="w-16 h-16 rounded-full bg-green-400/15 flex items-center justify-center mb-2">
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-full"
+            style={{ backgroundColor: "rgba(10,10,15,0.92)", transition: "opacity 0.4s" }}
+          >
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2"
+              style={{ backgroundColor: "rgba(91,141,239,0.13)", border: "1.5px solid rgba(91,141,239,0.28)" }}>
+              {/* Camera icon */}
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                <path d="M6 16l7 7 13-13" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                <rect x="3" y="9" width="26" height="17" rx="3" stroke="#5B8DEF" strokeWidth="2" />
+                <circle cx="16" cy="17" r="5" stroke="#5B8DEF" strokeWidth="2" />
+                <path d="M11 9V7a2 2 0 012-2h6a2 2 0 012 2v2" stroke="#5B8DEF" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </div>
-            <p className="text-white font-bold text-lg">Arrived!</p>
+            <p className="text-white font-bold text-lg">Camera Unlocked</p>
           </div>
         )}
       </div>
 
       {/* Distance */}
       <div className="flex flex-col items-center mb-6">
-        <p className="text-white text-5xl font-bold tracking-tight">{distance}<span className="text-2xl text-[#8A8A9B] ml-1">m</span></p>
+        <p className="text-white text-5xl font-bold tracking-tight">
+          {distance}<span className="text-2xl text-[#8A8A9B] ml-1">m</span>
+        </p>
         <p className="text-[#8A8A9B] text-sm mt-1">to Jordan M.</p>
       </div>
 
       {/* Status card */}
       <div className="w-full bg-[#141420] border border-[#252535] rounded-2xl px-5 py-4 flex items-center gap-4 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-[#A259FF]/10 border border-[#A259FF]/20 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ backgroundColor: "rgba(91,141,239,0.10)", border: "1px solid rgba(91,141,239,0.20)" }}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="6" width="16" height="10" rx="2" stroke="#A259FF" strokeWidth="1.5" />
-            <path d="M7 6V4a3 3 0 016 0v2" stroke="#A259FF" strokeWidth="1.5" strokeLinecap="round" />
+            <rect x="2" y="6" width="16" height="10" rx="2" stroke="#5B8DEF" strokeWidth="1.5" />
+            <circle cx="10" cy="11" r="2.5" stroke="#5B8DEF" strokeWidth="1.5" />
+            <path d="M7 6V5a3 3 0 016 0v1" stroke="#5B8DEF" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </div>
         <div className="flex-1">
           <p className="text-white text-sm font-semibold">Photo Request</p>
-          <p className="text-[#8A8A9B] text-xs">Navigate to fulfiller's location</p>
+          <p className={`text-xs transition-colors ${arrived ? "text-[#5B8DEF]" : "text-[#8A8A9B]"}`}>
+            {arrived ? "In range · open camera below" : "Navigate to Jordan M.'s location"}
+          </p>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 bg-[#5B8DEF] rounded-full animate-pulse" />
@@ -129,8 +137,8 @@ export function Compass() {
         </div>
       </div>
 
-      {/* Heading readout */}
-      <div className="flex w-full justify-between gap-3">
+      {/* Stats row */}
+      <div className="flex w-full justify-between gap-3 mb-6">
         {[
           { label: "Heading", value: `${Math.round(heading)}°` },
           { label: "Bearing", value: "NE" },
@@ -142,6 +150,23 @@ export function Compass() {
           </div>
         ))}
       </div>
+
+      {/* Open Camera button — shown when within 100 m */}
+      {arrived && (
+        <div className="w-full px-0">
+          <button
+            className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-semibold text-white text-base"
+            style={{ background: "linear-gradient(90deg, #5B8DEF 0%, #A259FF 100%)" }}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="5" width="16" height="11" rx="2" stroke="white" strokeWidth="1.6" />
+              <circle cx="10" cy="10.5" r="2.5" stroke="white" strokeWidth="1.6" />
+              <path d="M7 5V4a3 3 0 016 0v1" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            Open Camera
+          </button>
+        </div>
+      )}
     </div>
   );
 }

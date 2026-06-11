@@ -129,7 +129,7 @@ export default function CompassScreen() {
       const distInterval = setInterval(() => {
         simDist = Math.max(0, simDist - Math.floor(Math.random() * 8 + 2));
         setDistance(simDist);
-        if (simDist <= 10) markArrived();
+        if (simDist <= 100) markArrived();
       }, 800);
 
       return () => {
@@ -154,7 +154,7 @@ export default function CompassScreen() {
         const bearing = getBearing(latitude, longitude, targetLat, targetLon);
         setDistance(dist);
         setTargetBearing(bearing);
-        if (dist <= 15) markArrived();
+        if (dist <= 100) markArrived();
       } catch {}
 
       // Watch heading (fast, ~5Hz)
@@ -181,7 +181,7 @@ export default function CompassScreen() {
           ownPosRef.current = { lat: latitude, lon: longitude };
           const dist = Math.round(getDistanceM(latitude, longitude, targetLat, targetLon));
           setDistance(dist);
-          if (dist <= 15) markArrived();
+          if (dist <= 100) markArrived();
         }
       );
     }
@@ -270,7 +270,7 @@ export default function CompassScreen() {
           <View style={[styles.centerDot, { backgroundColor: colors.card, borderColor: colors.primary }]} />
         </View>
 
-        {/* Arrived overlay */}
+        {/* In-range overlay */}
         {arrived && (
           <Animated.View
             style={[
@@ -278,10 +278,10 @@ export default function CompassScreen() {
               { backgroundColor: colors.background + "F0", opacity: arrivedAnim },
             ]}
           >
-            <View style={[styles.arrivedIconWrap, { backgroundColor: "#4ade8020", borderColor: "#4ade8040" }]}>
-              <Feather name="check" size={36} color="#4ade80" />
+            <View style={[styles.arrivedIconWrap, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}>
+              <Feather name={type === "photo" ? "camera" : "video"} size={36} color={colors.primary} />
             </View>
-            <Text style={[styles.arrivedText, { color: colors.foreground }]}>Arrived!</Text>
+            <Text style={[styles.arrivedText, { color: colors.foreground }]}>Camera Unlocked</Text>
           </Animated.View>
         )}
       </View>
@@ -304,8 +304,8 @@ export default function CompassScreen() {
           <Text style={[styles.statusTitle, { color: colors.foreground }]}>
             {type === "photo" ? "Photo" : `Video · ${duration}s`} Request
           </Text>
-          <Text style={[styles.statusSub, { color: colors.mutedForeground }]}>
-            Navigate to {userName}'s location
+          <Text style={[styles.statusSub, { color: arrived ? colors.primary : colors.mutedForeground }]}>
+            {arrived ? "In range · open camera below" : `Navigate to ${userName}'s location`}
           </Text>
         </View>
         <View style={styles.liveBadge}>
