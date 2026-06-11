@@ -42,8 +42,7 @@ export default function ProfileScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setLoggingOut(true);
     await logout();
-    setLoggingOut(false);
-    setShowLogoutModal(false);
+    router.replace("/goodbye");
   }
 
   const stats = [
