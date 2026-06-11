@@ -58,7 +58,7 @@ export default function SignupScreen() {
     setLoading(false);
     if (result === true) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(tabs)/");
+      router.replace("/(tabs)");
     } else {
       setError(typeof result === "string" ? result : "Something went wrong. Please try again.");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

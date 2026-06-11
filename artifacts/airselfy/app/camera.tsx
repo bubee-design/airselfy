@@ -125,7 +125,9 @@ export default function CameraScreen() {
         timerRef.current = setInterval(() => {
           setElapsed((e) => {
             if (e + 1 >= duration) {
-              stopRecording();
+              // Defer out of the setState updater to avoid React's
+              // "update a component while rendering another" warning
+              setTimeout(stopRecording, 0);
               return duration;
             }
             return e + 1;
