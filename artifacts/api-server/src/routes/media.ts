@@ -24,6 +24,7 @@ router.get("/media", async (req, res): Promise<void> => {
       type: item.type,
       byName: item.byName,
       uri: item.uri,
+      videoUri: item.videoUri ?? undefined,
       duration: item.duration ?? undefined,
       createdAt: item.createdAt.getTime(),
     }))
@@ -31,11 +32,12 @@ router.get("/media", async (req, res): Promise<void> => {
 });
 
 router.post("/media", async (req, res): Promise<void> => {
-  const { userId, type, byName, uri, duration } = req.body as {
+  const { userId, type, byName, uri, videoUri, duration } = req.body as {
     userId?: unknown;
     type?: unknown;
     byName?: unknown;
     uri?: unknown;
+    videoUri?: unknown;
     duration?: unknown;
   };
 
@@ -51,10 +53,19 @@ router.post("/media", async (req, res): Promise<void> => {
 
   const dur =
     typeof duration === "number" && Number.isInteger(duration) ? duration : null;
+  const vUri =
+    typeof videoUri === "string" && videoUri ? videoUri : null;
 
   const [item] = await db
     .insert(mediaItemsTable)
-    .values({ userId, type, byName, uri, ...(dur !== null ? { duration: dur } : {}) })
+    .values({
+      userId,
+      type,
+      byName,
+      uri,
+      ...(vUri !== null ? { videoUri: vUri } : {}),
+      ...(dur !== null ? { duration: dur } : {}),
+    })
     .returning();
 
   req.log.info({ userId, type }, "Media item saved");
@@ -65,6 +76,7 @@ router.post("/media", async (req, res): Promise<void> => {
     type: item.type,
     byName: item.byName,
     uri: item.uri,
+    videoUri: item.videoUri ?? undefined,
     duration: item.duration ?? undefined,
     createdAt: item.createdAt.getTime(),
   });

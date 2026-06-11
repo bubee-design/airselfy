@@ -1,8 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   FlatList,
@@ -15,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { AlbumItem, useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -51,6 +53,59 @@ function isRealUri(uri: string): boolean {
     uri.startsWith("https://") ||
     uri.startsWith("data:")
   );
+}
+
+/** Resolves a video URI for playback: writes base64 data URIs to a temp file */
+async function resolveVideoUri(rawUri: string, itemId: string): Promise<string> {
+  if (!rawUri.startsWith("data:")) return rawUri;
+  const base64 = rawUri.split(",")[1];
+  if (!base64) return rawUri;
+  try {
+    // expo-file-system/legacy keeps the old imperative API (cacheDirectory, writeAsStringAsync)
+    const fs = await import("expo-file-system/legacy");
+    const path = `${fs.cacheDirectory}video_${itemId}.mp4`;
+    await fs.writeAsStringAsync(path, base64, {
+      encoding: fs.EncodingType.Base64,
+    });
+    return path;
+  } catch {
+    return rawUri;
+  }
+}
+
+/** Video player — only rendered once a local file URI is ready */
+function ReadyVideoPlayer({ uri }: { uri: string }) {
+  const player = useVideoPlayer({ uri }, (p) => {
+    p.play();
+  });
+  return (
+    <VideoView
+      player={player}
+      style={styles.realImage}
+      nativeControls
+    />
+  );
+}
+
+/** Handles base64→file conversion before mounting the player */
+function VideoPlayback({ item }: { item: AlbumItem }) {
+  const [localUri, setLocalUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!item.videoUri) return;
+    resolveVideoUri(item.videoUri, item.id).then(setLocalUri).catch(() => {});
+  }, [item.videoUri, item.id]);
+
+  if (!item.videoUri) return null;
+  if (!localUri) {
+    return (
+      <View style={[styles.realImage, styles.videoLoading]}>
+        <ActivityIndicator color="#fff" size="large" />
+        <Text style={styles.videoLoadingText}>Preparing video…</Text>
+      </View>
+    );
+  }
+  return <ReadyVideoPlayer uri={localUri} />;
 }
 
 export default function AlbumScreen() {
@@ -187,6 +242,13 @@ export default function AlbumScreen() {
                   </>
                 )}
 
+                {/* Play indicator for video items */}
+                {item.type === "video" && (
+                  <View style={styles.playBadge}>
+                    <Feather name="play" size={10} color="#fff" />
+                  </View>
+                )}
+
                 {/* Type badge */}
                 <View style={[styles.badge, { backgroundColor: "#00000066" }]}>
                   {item.type === "video" && <View style={styles.recDot} />}
@@ -243,7 +305,9 @@ export default function AlbumScreen() {
 
               {/* Preview */}
               <View style={styles.previewWrap}>
-                {isRealUri(selected.uri) ? (
+                {selected.type === "video" && selected.videoUri ? (
+                  <VideoPlayback item={selected} />
+                ) : isRealUri(selected.uri) ? (
                   <Image
                     source={{ uri: selected.uri }}
                     style={[
@@ -360,6 +424,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
   },
+  playBadge: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    marginTop: -16,
+    marginLeft: -16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   badge: {
     position: "absolute",
     top: 10,
@@ -421,7 +498,15 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     borderRadius: 24,
     borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
+  videoLoading: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    gap: 12,
+  },
+  videoLoadingText: { color: "rgba(255,255,255,0.5)", fontSize: 13, fontFamily: "Inter_400Regular" },
   previewIcon: {
     width: 96,
     height: 96,

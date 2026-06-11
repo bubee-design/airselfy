@@ -8,6 +8,7 @@ export const mediaItemsTable = pgTable("media_items", {
   type: text("type").notNull(),
   byName: text("by_name").notNull(),
   uri: text("uri").notNull(),
+  videoUri: text("video_uri"),
   duration: integer("duration"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

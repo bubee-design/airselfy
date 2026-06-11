@@ -157,7 +157,7 @@ export function attachSocket(httpServer: HttpServer): Server {
 
     socket.on(
       "photo_delivered",
-      (data: { requesterId: string; type: string; duration: number; uri?: string }) => {
+      (data: { requesterId: string; type: string; duration: number; uri?: string; videoUri?: string }) => {
         const requester = [...locations.values()].find(
           (u) => u.userId === data.requesterId
         );
@@ -168,6 +168,7 @@ export function attachSocket(httpServer: HttpServer): Server {
             duration: data.duration,
             byName: deliverer.name,
             uri: data.uri ?? `placeholder://received-${Date.now()}`,
+            ...(data.videoUri ? { videoUri: data.videoUri } : {}),
           });
           logger.info(
             { from: deliverer.userId, to: data.requesterId },

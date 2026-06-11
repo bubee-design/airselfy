@@ -14,6 +14,7 @@ export interface AlbumItem {
   type: "photo" | "video";
   byName: string;
   uri: string;
+  videoUri?: string;
   createdAt: number;
   duration?: number;
 }
@@ -99,6 +100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           type: item.type,
           byName: item.byName,
           uri: item.uri,
+          ...(item.videoUri ? { videoUri: item.videoUri } : {}),
           ...(item.duration != null ? { duration: item.duration } : {}),
         }),
       });

@@ -57,7 +57,9 @@
   },
   "dependencies": {
     "expo-camera": "^17.0.10",
+    "expo-file-system": "^56.0.7",
     "expo-sensors": "^15.0.8",
+    "expo-video": "^56.1.2",
     "react-native-maps": "1.18.0",
     "socket.io-client": "^4.8.3"
   }

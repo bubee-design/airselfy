@@ -53,7 +53,7 @@ export default function CameraScreen() {
   const flashAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Thumbnail URI captured before video recording starts (to send as album preview)
+  // Thumbnail URI captured before video recording starts (shown in album grid)
   const thumbnailUriRef = useRef<string>("");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -103,7 +103,7 @@ export default function CameraScreen() {
       setTimeout(() => router.replace("/(tabs)/album"), 800);
     } else {
       if (!recording) {
-        // Snap a still thumbnail before recording starts (used as video album preview)
+        // Snap a still thumbnail before recording starts (used as album grid preview)
         thumbnailUriRef.current = "";
         if (Platform.OS !== "web" && cameraRef.current) {
           try {
@@ -137,9 +137,18 @@ export default function CameraScreen() {
         if (Platform.OS !== "web" && cameraRef.current) {
           try {
             // recordAsync resolves when stopRecording() is called (by timer or user tap)
-            await cameraRef.current.recordAsync({ maxDuration: duration });
-            // Only deliver here — stopRecording does NOT deliver on native
-            if (requesterId) deliverMedia(requesterId, "video", duration, thumbnailUriRef.current);
+            const result = await cameraRef.current.recordAsync({ maxDuration: duration });
+            // Read video file as base64 for cross-device delivery
+            let videoUri: string | undefined;
+            try {
+              // expo-file-system/legacy keeps the old readAsStringAsync API
+              const fs = await import("expo-file-system/legacy");
+              const base64 = await fs.readAsStringAsync(result.uri, {
+                encoding: fs.EncodingType.Base64,
+              });
+              videoUri = `data:video/mp4;base64,${base64}`;
+            } catch {}
+            if (requesterId) deliverMedia(requesterId, "video", duration, thumbnailUriRef.current, videoUri);
             setTimeout(() => router.replace("/(tabs)/album"), 600);
           } catch {}
         }

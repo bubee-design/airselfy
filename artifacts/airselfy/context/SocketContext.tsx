@@ -54,7 +54,7 @@ interface SocketContextType {
   sendRequest: (targetUserId: string, type: "photo" | "video", duration: number) => void;
   acceptRequest: () => void;
   declineRequest: () => void;
-  deliverMedia: (requesterId: string, type: "photo" | "video", duration: number, uri: string) => void;
+  deliverMedia: (requesterId: string, type: "photo" | "video", duration: number, uri: string, videoUri?: string) => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
@@ -124,8 +124,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     setPendingRequest(null);
   }
 
-  function deliverMedia(requesterId: string, type: "photo" | "video", duration: number, uri: string) {
-    socketRef.current?.emit("photo_delivered", { requesterId, type, duration, uri });
+  function deliverMedia(requesterId: string, type: "photo" | "video", duration: number, uri: string, videoUri?: string) {
+    socketRef.current?.emit("photo_delivered", {
+      requesterId,
+      type,
+      duration,
+      uri,
+      ...(videoUri ? { videoUri } : {}),
+    });
   }
 
   // ── Socket lifecycle ──────────────────────────────────────────────────────
@@ -218,11 +224,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on(
       "media_received",
-      (data: { type: "photo" | "video"; duration?: number; byName: string; uri: string }) => {
+      (data: { type: "photo" | "video"; duration?: number; byName: string; uri: string; videoUri?: string }) => {
         addAlbumItemRef.current({
           type: data.type,
           byName: data.byName,
           uri: data.uri,
+          ...(data.videoUri ? { videoUri: data.videoUri } : {}),
           ...(data.duration ? { duration: data.duration } : {}),
         });
         setLastReceivedAt(Date.now());
