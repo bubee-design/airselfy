@@ -31,6 +31,8 @@ export function attachSocket(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
     path: "/api/socket.io",
     cors: { origin: "*", methods: ["GET", "POST"] },
+    // Base64-encoded images can be several MB; raise the default 1 MB cap
+    maxHttpBufferSize: 20 * 1024 * 1024,
   });
 
   const locations = new Map<string, UserLocation>();
