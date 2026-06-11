@@ -65,7 +65,7 @@ export default function CameraScreen() {
       }
       try {
         const cam = await import("expo-camera");
-        const [perm] = await cam.Camera.requestCameraPermissionsAsync();
+        const perm = await cam.Camera.requestCameraPermissionsAsync();
         if (perm.granted) {
           setPermGranted(true);
           // @ts-ignore

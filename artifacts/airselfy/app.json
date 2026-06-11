@@ -15,6 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
+      "deploymentTarget": "16.0",
       "infoPlist": {
         "NSCameraUsageDescription": "airselfy uses your camera to capture photos and videos requested by nearby users.",
         "NSLocationWhenInUseUsageDescription": "airselfy uses your location to show nearby users on the map and help with navigation.",
