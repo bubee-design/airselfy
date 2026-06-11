@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { EncodingType, readAsStringAsync } from "expo-file-system/legacy";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -141,10 +142,8 @@ export default function CameraScreen() {
             // Read video file as base64 for cross-device delivery
             let videoUri: string | undefined;
             try {
-              // expo-file-system/legacy keeps the old readAsStringAsync API
-              const fs = await import("expo-file-system/legacy");
-              const base64 = await fs.readAsStringAsync(result.uri, {
-                encoding: fs.EncodingType.Base64,
+              const base64 = await readAsStringAsync(result.uri, {
+                encoding: EncodingType.Base64,
               });
               videoUri = `data:video/mp4;base64,${base64}`;
             } catch {}

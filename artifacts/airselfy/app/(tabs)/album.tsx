@@ -1,5 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import {
+  cacheDirectory,
+  EncodingType,
+  writeAsStringAsync,
+} from "expo-file-system/legacy";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -61,12 +66,8 @@ async function resolveVideoUri(rawUri: string, itemId: string): Promise<string> 
   const base64 = rawUri.split(",")[1];
   if (!base64) return rawUri;
   try {
-    // expo-file-system/legacy keeps the old imperative API (cacheDirectory, writeAsStringAsync)
-    const fs = await import("expo-file-system/legacy");
-    const path = `${fs.cacheDirectory}video_${itemId}.mp4`;
-    await fs.writeAsStringAsync(path, base64, {
-      encoding: fs.EncodingType.Base64,
-    });
+    const path = `${cacheDirectory}video_${itemId}.mp4`;
+    await writeAsStringAsync(path, base64, { encoding: EncodingType.Base64 });
     return path;
   } catch {
     return rawUri;
