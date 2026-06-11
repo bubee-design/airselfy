@@ -1,6 +1,6 @@
 import * as Location from "expo-location";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { Platform } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext";
 
@@ -89,6 +89,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         name: user.name,
         initials: user.initials,
       });
+      // Re-emit last known position immediately after (re)connect so the server
+      // doesn't reset us to lat:0/lon:0 until the next watchPositionAsync tick.
+      // Critical on iOS 26 where background/foreground cycles trigger reconnects.
+      if (ownPosRef.current) {
+        socket.emit("location", {
+          lat: ownPosRef.current.lat,
+          lon: ownPosRef.current.lon,
+        });
+      }
     });
 
     socket.on("connect_error", () => {
@@ -98,6 +107,19 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socket.on("disconnect", () => {
       setIsConnected(false);
     });
+
+    // iOS 26 backgrounds apps more aggressively. When the user returns to
+    // foreground the socket may still be alive (no reconnect event fires),
+    // but the server entry has grown stale. Push position immediately.
+    function handleAppStateChange(next: AppStateStatus) {
+      if (next === "active" && ownPosRef.current) {
+        socket.emit("location", {
+          lat: ownPosRef.current.lat,
+          lon: ownPosRef.current.lon,
+        });
+      }
+    }
+    const appStateSub = AppState.addEventListener("change", handleAppStateChange);
 
     type RemoteUser = Omit<NearbyUser, "distanceM">;
 
@@ -151,6 +173,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     startLocationWatch(socket);
 
     return () => {
+      appStateSub.remove();
       socket.disconnect();
       posSubRef.current?.remove();
       posSubRef.current = null;
