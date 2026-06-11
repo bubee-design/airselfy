@@ -54,7 +54,7 @@ export function attachSocket(httpServer: HttpServer): Server {
         locations.set(socket.id, entry);
         logger.info({ userId: data.userId }, "User joined");
 
-        // Send current users to the new joiner
+        // Send current users (who already have a position) to the new joiner
         const others = [...locations.values()].filter(
           (u) => u.socketId !== socket.id && u.lat !== 0
         );
@@ -71,6 +71,10 @@ export function attachSocket(httpServer: HttpServer): Server {
             }))
           );
         }
+
+        // Ask every other connected user to re-emit their location immediately
+        // so the new joiner sees them even if they haven't moved recently
+        socket.broadcast.emit("peer_joined");
       }
     );
 

@@ -136,6 +136,17 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       );
     });
 
+    // A new peer just joined — re-emit our current position immediately
+    // so they can see us without waiting for the next watchPositionAsync tick
+    socket.on("peer_joined", () => {
+      if (ownPosRef.current) {
+        socket.emit("location", {
+          lat: ownPosRef.current.lat,
+          lon: ownPosRef.current.lon,
+        });
+      }
+    });
+
     // Start location watch
     startLocationWatch(socket);
 
@@ -150,6 +161,24 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
+
+      // Emit a position snapshot immediately so we're visible to existing peers
+      // without waiting for the first watchPositionAsync tick (movement/timer)
+      try {
+        const snap = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        ownPosRef.current = {
+          lat: snap.coords.latitude,
+          lon: snap.coords.longitude,
+        };
+        socket.emit("location", {
+          lat: snap.coords.latitude,
+          lon: snap.coords.longitude,
+        });
+      } catch {
+        // GPS unavailable on first snapshot — watch will fill in later
+      }
 
       posSubRef.current = await Location.watchPositionAsync(
         {
