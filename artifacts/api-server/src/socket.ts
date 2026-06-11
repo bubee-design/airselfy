@@ -144,6 +144,15 @@ export function attachSocket(httpServer: HttpServer): Server {
       }
     );
 
+    socket.on("photo_declined", (data: { requesterId: string }) => {
+      const requester = [...locations.values()].find(u => u.userId === data.requesterId);
+      const decliner = locations.get(socket.id);
+      if (requester && decliner) {
+        io.to(requester.socketId).emit("request_declined", { byName: decliner.name });
+        logger.info({ by: decliner.userId, to: data.requesterId }, "Request declined");
+      }
+    });
+
     socket.on(
       "photo_delivered",
       (data: { requesterId: string; type: string; duration: number }) => {

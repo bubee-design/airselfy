@@ -50,6 +50,7 @@ interface SocketContextType {
   isConnected: boolean;
   pendingRequest: IncomingRequest | null;
   lastReceivedAt: number | null;
+  requestDeclinedBy: string | null;
   sendRequest: (targetUserId: string, type: "photo" | "video", duration: number) => void;
   acceptRequest: () => void;
   declineRequest: () => void;
@@ -61,6 +62,7 @@ const SocketContext = createContext<SocketContextType>({
   isConnected: false,
   pendingRequest: null,
   lastReceivedAt: null,
+  requestDeclinedBy: null,
   sendRequest: () => {},
   acceptRequest: () => {},
   declineRequest: () => {},
@@ -74,6 +76,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [pendingRequest, setPendingRequest] = useState<IncomingRequest | null>(null);
   const [lastReceivedAt, setLastReceivedAt] = useState<number | null>(null);
+  const [requestDeclinedBy, setRequestDeclinedBy] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const ownPosRef = useRef<{ lat: number; lon: number } | null>(null);
   const posSubRef = useRef<Location.LocationSubscription | null>(null);
@@ -115,6 +118,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   }
 
   function declineRequest() {
+    if (pendingRequest) {
+      socketRef.current?.emit("photo_declined", { requesterId: pendingRequest.requesterId });
+    }
     setPendingRequest(null);
   }
 
@@ -223,6 +229,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
+    socket.on("request_declined", (data: { byName: string }) => {
+      setRequestDeclinedBy(data.byName);
+    });
+
     // ── App-state refresh (iOS 26) ─────────────────────────────────────────
 
     function handleAppStateChange(next: AppStateStatus) {
@@ -270,7 +280,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SocketContext.Provider
-      value={{ nearbyUsers, isConnected, pendingRequest, lastReceivedAt, sendRequest, acceptRequest, declineRequest, deliverMedia }}
+      value={{ nearbyUsers, isConnected, pendingRequest, lastReceivedAt, requestDeclinedBy, sendRequest, acceptRequest, declineRequest, deliverMedia }}
     >
       {children}
     </SocketContext.Provider>

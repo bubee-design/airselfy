@@ -68,14 +68,25 @@ export default function CompassScreen() {
   const targetLon = parseFloat(params.targetLon ?? String(BASE_LON + 0.0008));
   const isRequester = params.mode === "requester";
 
-  const { lastReceivedAt } = useSocket();
-  // Snapshot the value at mount — only react to changes that happen after
+  const { lastReceivedAt, requestDeclinedBy } = useSocket();
+  // Snapshot values at mount — only react to changes that happen after
   const initialReceivedAtRef = useRef(lastReceivedAt);
+  const initialDeclinedByRef = useRef(requestDeclinedBy);
+  const [declinedBy, setDeclinedBy] = useState<string | null>(null);
+
   useEffect(() => {
     if (isRequester && lastReceivedAt !== null && lastReceivedAt !== initialReceivedAtRef.current) {
       router.replace("/(tabs)/album");
     }
   }, [lastReceivedAt]);
+
+  useEffect(() => {
+    if (isRequester && requestDeclinedBy !== null && requestDeclinedBy !== initialDeclinedByRef.current) {
+      setDeclinedBy(requestDeclinedBy);
+      const t = setTimeout(() => router.replace("/(tabs)"), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [requestDeclinedBy]);
 
   const initialDist = Math.round(getDistanceM(BASE_LAT, BASE_LON, targetLat, targetLon));
 
@@ -385,6 +396,49 @@ export default function CompassScreen() {
       )}
 
       <View style={{ height: Platform.OS === "web" ? 34 : insets.bottom + 20 }} />
+
+      {/* Declined overlay (requester only) */}
+      {declinedBy && (
+        <View
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              backgroundColor: colors.background + "F4",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 14,
+              paddingHorizontal: 40,
+            },
+          ]}
+        >
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: "#FF4D4D18",
+              borderWidth: 1,
+              borderColor: "#FF4D4D44",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Feather name="x" size={38} color="#FF4D4D" />
+          </View>
+          <Text style={[styles.arrivedText, { color: colors.foreground }]}>Request Declined</Text>
+          <Text
+            style={{
+              color: colors.mutedForeground,
+              fontSize: 14,
+              textAlign: "center",
+              fontFamily: "Inter_400Regular",
+              lineHeight: 20,
+            }}
+          >
+            {declinedBy.split(" ")[0]} isn't available right now.{"\n"}Returning to map…
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
