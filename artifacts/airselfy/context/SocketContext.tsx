@@ -51,13 +51,13 @@ interface SocketContextType {
 }
 
 const SocketContext = createContext<SocketContextType>({
-  nearbyUsers: SEED_USERS,
+  nearbyUsers: [],
   isConnected: false,
 });
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>(SEED_USERS);
+  const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const ownPosRef = useRef<{ lat: number; lon: number } | null>(null);
@@ -70,7 +70,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       posSubRef.current?.remove();
       posSubRef.current = null;
       setIsConnected(false);
-      setNearbyUsers(SEED_USERS);
+      setNearbyUsers([]);
       return;
     }
 
@@ -110,7 +110,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
                 ? Math.round(haversineM(ownPosRef.current.lat, ownPosRef.current.lon, u.lat, u.lon))
                 : 0,
             }))
-          : SEED_USERS
+          : []
       );
     });
 
@@ -132,7 +132,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on("user_left", (userId: string) => {
       setNearbyUsers((prev) =>
-        prev.length <= 1 ? SEED_USERS : prev.filter((u) => u.id !== userId)
+        prev.filter((u) => u.id !== userId)
       );
     });
 
