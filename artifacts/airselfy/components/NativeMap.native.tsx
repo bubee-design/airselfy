@@ -72,13 +72,13 @@ export default function NativeMap() {
     });
   }
 
-  function handleSendRequest() {
-    if (!selected || !mediaType) return;
+  function handleSendRequest(type: "photo" | "video", dur?: number) {
+    if (!selected) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     closeSheet();
     router.push({
       pathname: "/compass",
-      params: { userId: selected.id, userName: selected.name, type: mediaType, duration: String(duration) },
+      params: { userId: selected.id, userName: selected.name, type, duration: String(dur ?? duration) },
     });
   }
 
@@ -147,17 +147,23 @@ export default function NativeMap() {
               </View>
             </View>
 
-            {!mediaType ? (
+            {mediaType !== "video" ? (
               <>
                 <Text style={[styles.sheetLabel, { color: colors.mutedForeground }]}>
                   REQUEST FROM {selected.name.split(" ")[0].toUpperCase()}
                 </Text>
                 <View style={styles.mediaRow}>
-                  <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMediaType("photo"); }} style={[styles.mediaBtn, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "40" }]}>
+                  <Pressable
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSendRequest("photo"); }}
+                    style={[styles.mediaBtn, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "40" }]}
+                  >
                     <Feather name="camera" size={20} color={colors.primary} />
                     <Text style={[styles.mediaBtnText, { color: colors.primary }]}>Photo</Text>
                   </Pressable>
-                  <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMediaType("video"); }} style={[styles.mediaBtn, { backgroundColor: colors.accent + "18", borderColor: colors.accent + "40" }]}>
+                  <Pressable
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMediaType("video"); setDuration(10); }}
+                    style={[styles.mediaBtn, { backgroundColor: colors.accent + "18", borderColor: colors.accent + "40" }]}
+                  >
                     <Feather name="video" size={20} color={colors.accent} />
                     <Text style={[styles.mediaBtnText, { color: colors.accent }]}>Video</Text>
                   </Pressable>
@@ -169,19 +175,21 @@ export default function NativeMap() {
                   <Pressable onPress={() => setMediaType(null)}>
                     <Feather name="arrow-left" size={20} color={colors.foreground} />
                   </Pressable>
-                  <Text style={[styles.sheetTitle, { color: colors.foreground }]}>
-                    {mediaType === "photo" ? "Photo" : "Video"} Duration
-                  </Text>
+                  <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Video Duration</Text>
                 </View>
                 <View style={styles.durationRow}>
                   {[5, 10, 20, 30].map((d) => (
-                    <Pressable key={d} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDuration(d); }} style={[styles.durationBtn, { backgroundColor: duration === d ? (mediaType === "photo" ? colors.primary : colors.accent) : colors.muted, borderColor: duration === d ? (mediaType === "photo" ? colors.primary : colors.accent) : colors.border }]}>
+                    <Pressable
+                      key={d}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDuration(d); }}
+                      style={[styles.durationBtn, { backgroundColor: duration === d ? colors.accent : colors.muted, borderColor: duration === d ? colors.accent : colors.border }]}
+                    >
                       <Text style={[styles.durationText, { color: duration === d ? "#fff" : colors.mutedForeground }]}>{d}s</Text>
                     </Pressable>
                   ))}
                 </View>
-                <Pressable onPress={handleSendRequest}>
-                  <LinearGradient colors={mediaType === "photo" ? [colors.primary, colors.accent] : [colors.accent, "#FF6B6B"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sendBtn}>
+                <Pressable onPress={() => handleSendRequest("video", duration)}>
+                  <LinearGradient colors={[colors.accent, "#FF6B6B"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sendBtn}>
                     <Feather name="send" size={16} color="#fff" />
                     <Text style={styles.sendBtnText}>Send Request</Text>
                   </LinearGradient>
