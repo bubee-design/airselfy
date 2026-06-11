@@ -13,7 +13,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useApp } from "@/context/AppContext";
 import { useSocket } from "@/context/SocketContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -28,7 +27,6 @@ export default function CameraScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ type: string; duration: string; byName: string; requesterId?: string }>();
-  const { addAlbumItem } = useApp();
   const { deliverMedia } = useSocket();
 
   const type = params.type === "video" ? "video" : "photo";
@@ -99,7 +97,6 @@ export default function CameraScreen() {
         } catch {}
       }
       setCaptured(true);
-      await addAlbumItem({ type: "photo", byName, uri });
       if (requesterId) deliverMedia(requesterId, "photo", 0);
       setTimeout(() => router.replace("/(tabs)/album"), 800);
     } else {
@@ -127,7 +124,6 @@ export default function CameraScreen() {
         if (Platform.OS !== "web" && cameraRef.current) {
           try {
             const result = await cameraRef.current.recordAsync({ maxDuration: duration });
-            await addAlbumItem({ type: "video", byName, uri: result.uri, duration });
             if (requesterId) deliverMedia(requesterId, "video", duration);
           } catch {}
         } else {
@@ -145,7 +141,6 @@ export default function CameraScreen() {
     if (Platform.OS !== "web") {
       try { cameraRef.current?.stopRecording(); } catch {}
     }
-    await addAlbumItem({ type: "video", byName, uri: "placeholder://video", duration });
     if (requesterId) deliverMedia(requesterId, "video", duration);
     setTimeout(() => router.replace("/(tabs)/album"), 600);
   }
