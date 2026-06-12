@@ -76,7 +76,7 @@ export default function ProfileScreen() {
         >
           <Text style={styles.avatarText}>{user?.initials ?? "??"}</Text>
         </LinearGradient>
-        <View style={styles.onlineDot} />
+        <View style={[styles.onlineDot, { borderColor: colors.background }]} />
         <Text style={[styles.profileName, { color: colors.foreground }]}>
           {user?.name ?? "—"}
         </Text>
@@ -252,7 +252,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#4ade80",
     borderWidth: 2.5,
-    borderColor: "#0A0A0F",
   },
   profileName: { marginTop: 14, fontSize: 22, fontWeight: "700" as const, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
   profileEmail: { marginTop: 4, fontSize: 14, fontFamily: "Inter_400Regular" },

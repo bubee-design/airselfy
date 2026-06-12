@@ -52,7 +52,7 @@ export default function HomeScreen() {
           >
             <Text style={styles.avatarText}>{user?.initials ?? "??"}</Text>
           </LinearGradient>
-          <View style={styles.onlineDot} />
+          <View style={[styles.onlineDot, { borderColor: colors.background }]} />
         </Pressable>
       </View>
 
@@ -200,7 +200,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "#4ade80",
     borderWidth: 2,
-    borderColor: "#0A0A0F",
   },
   nearbyCard: {
     flexDirection: "row",

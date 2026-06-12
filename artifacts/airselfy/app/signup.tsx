@@ -41,7 +41,7 @@ export default function SignupScreen() {
   }
 
   const strength = passwordStrength();
-  const strengthColors = ["#252535", "#FF6B6B", "#FFB347", "#FFD700", "#4ade80"];
+  const strengthColors = ["#E8E9F0", "#FF6B6B", "#FFB347", "#FFD700", "#4ade80"];
 
   async function handleSignup() {
     if (!name || !email || !password) {

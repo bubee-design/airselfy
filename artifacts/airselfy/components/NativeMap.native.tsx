@@ -270,13 +270,6 @@ const styles = StyleSheet.create({
 });
 
 const darkMapStyle = [
-  { elementType: "geometry", stylers: [{ color: "#141420" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#8A8A9B" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#0A0A0F" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#1E1E30" }] },
-  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#252535" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#2E2E45" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0d1117" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
 ];
