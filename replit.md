@@ -1,6 +1,6 @@
-# [Project name]
+# Airselfy
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A social photo/video request mobile app — users see nearby people on a map, tap to request a photo or video, both navigate via compass, and the fulfiller captures media that lands in the requester's album.
 
 ## Run & Operate
 
@@ -11,9 +11,63 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 
+## EAS (Expo Application Services)
+
+EAS handles native iOS/Android builds and store submissions. Run all `eas` commands from inside `artifacts/airselfy/`.
+
+### One-time setup (per Expo account)
+
+```bash
+npm install -g eas-cli        # install EAS CLI globally
+eas login                     # log in to your Expo account
+cd artifacts/airselfy
+eas init                      # links project → writes projectId into app.json
+```
+
+After `eas init`, commit the updated `app.json` (it will contain `extra.eas.projectId`).
+
+### Build profiles (`eas.json`)
+
+| Profile | Use case | Output |
+|---|---|---|
+| `development` | Dev client for local Expo Go replacement | iOS Simulator `.app` / Android `.apk` |
+| `preview` | Internal distribution for testers | iOS `.ipa` (Ad Hoc) / Android `.apk` |
+| `production` | App Store / Google Play submission | iOS `.ipa` / Android `.aab` |
+
+### Common commands (run from `artifacts/airselfy/`)
+
+```bash
+# Development build — iOS Simulator
+pnpm run eas:build:dev:ios
+
+# Development build — Android device/emulator
+pnpm run eas:build:dev:android
+
+# Preview build (both platforms)
+pnpm run eas:build:preview
+
+# Production build (both platforms)
+pnpm run eas:build:prod
+
+# OTA update (JS-only, no store review needed)
+pnpm run eas:update
+
+# Submit to App Store / Google Play
+pnpm run eas:submit:ios
+pnpm run eas:submit:android
+```
+
+### App identifiers
+
+- iOS bundle ID: `com.airselfy.app`
+- Android package: `com.airselfy.app`
+
+Change these in `app.json` (`ios.bundleIdentifier` / `android.package`) before running `eas init` if you want a different ID — the store registration is based on these values.
+
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Mobile: Expo SDK 54 / React Native 0.81.5 (new architecture enabled)
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -22,23 +76,29 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/airselfy/` — Expo mobile app
+- `artifacts/airselfy/app/` — Expo Router screens
+- `artifacts/airselfy/components/` — shared React Native components
+- `artifacts/airselfy/constants/colors.ts` — global color palette (light mode)
+- `artifacts/airselfy/eas.json` — EAS build profiles
+- `artifacts/api-server/` — Express API server
+- `lib/db/` — Drizzle schema (source of truth for DB)
+- `lib/api-spec/` — OpenAPI spec (source of truth for API contract)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Light mode only — `userInterfaceStyle: "light"` in `app.json`; `useColors()` hook always returns `colors.light`
+- `expo-file-system/legacy` static imports in `album.tsx` and `camera.tsx` — required to avoid SDK 54 / Metro bundler version mismatch
+- `react-native-maps` pinned at `1.18.0` — do NOT upgrade or add to `plugins` in `app.json`
+- New Architecture (`newArchEnabled: true`) — enabled globally; all native modules must support it
+- `expo-dev-client` included — required for EAS development builds (custom native dev client)
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- **Never run `pnpm dev` at the workspace root** — use `restart_workflow` or the individual `--filter` command
+- **`react-native-maps`** must stay at `1.18.0` and must NOT appear in `app.json` plugins
+- **`expo-file-system`** — import from `expo-file-system/legacy` (static), not the default export
+- After `eas init`, commit `app.json` — the `projectId` written by EAS is required for subsequent builds
 
 ## Pointers
 
