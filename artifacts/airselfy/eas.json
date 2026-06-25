@@ -1,13 +1,13 @@
 {
   "cli": {
     "version": ">= 16.0.0",
-    "appVersionSource": "local",
     "promptToConfigurePushNotifications": false
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "workspaceRootDir": "../..",
       "ios": {
         "simulator": true
       },
@@ -20,6 +20,7 @@
     },
     "preview": {
       "distribution": "internal",
+      "workspaceRootDir": "../..",
       "ios": {
         "simulator": false
       },
@@ -32,6 +33,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "workspaceRootDir": "../..",
       "env": {
         "EXPO_PUBLIC_ENV": "production"
       }
