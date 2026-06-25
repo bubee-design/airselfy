@@ -1,0 +1,43 @@
+node:internal/bootstrap/switches/does_own_process_state:142
+    cachedCwd = rawMethods.cwd();
+                           ^
+
+Error: EPERM: process.cwd failed with error operation not permitted, uv_cwd
+    at process.wrappedCwd (node:internal/bootstrap/switches/does_own_process_state:142:28)
+    at process.cwd (/opt/homebrew/lib/node_modules/pnpm/dist/pnpm.cjs:4121:23)
+    at process.cwd (/opt/homebrew/lib/node_modules/pnpm/dist/pnpm.cjs:5942:23)
+    at ../node_modules/.pnpm/get-source@2.0.12/node_modules/get-source/impl/path.js (/opt/homebrew/lib/node_modules/pnpm/dist/pnpm.cjs:38303:58)
+    at __require (/opt/homebrew/lib/node_modules/pnpm/dist/pnpm.cjs:12:50)
+    at ../node_modules/.pnpm/get-source@2.0.12/node_modules/get-source/get-source.js (/opt/homebrew/lib/node_modules/pnpm/dist/pnpm.cjs:38394:17)
+    at __require (/opt/homebrew/lib/node_modules/pnpm/dist/pnpm.cjs:12:50)
+    at ../node_modules/.pnpm/stacktracey@2.1.8/node_modules/stacktracey/stacktracey.js (/opt/homebrew/lib/node_modules/pnpm/dist/pnpm.cjs:38694:21)
+    at __require (/opt/homebrew/lib/node_modules/pnpm/dist/pnpm.cjs:12:50)
+    at ../cli/default-reporter/lib/reportError.js (/opt/homebrew/lib/node_modules/pnpm/dist/pnpm.cjs:38933:42) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'uv_cwd'
+}
+
+Node.js v24.18.0
+(base) bubee@Dhirens-MacBook-Air advocaat % npm install -g eas-cli
+/Users/bubee/.nvm/versions/node/v24.18.0/lib/node_modules/npm/lib/cli/validate-engines.js:25
+    throw err
+    ^
+
+Error: EPERM: process.cwd failed with error operation not permitted, uv_cwd
+    at process.wrappedCwd (node:internal/bootstrap/switches/does_own_process_state:142:28)
+    at process.cwd (/Users/bubee/.nvm/versions/node/v24.18.0/lib/node_modules/npm/node_modules/graceful-fs/polyfills.js:10:19)
+    at new Config (/Users/bubee/.nvm/versions/node/v24.18.0/lib/node_modules/npm/node_modules/@npmcli/config/lib/index.js:80:19)
+    at new Npm (/Users/bubee/.nvm/versions/node/v24.18.0/lib/node_modules/npm/lib/npm.js:62:19)
+    at module.exports (/Users/bubee/.nvm/versions/node/v24.18.0/lib/node_modules/npm/lib/cli/entry.js:13:15)
+    at module.exports (/Users/bubee/.nvm/versions/node/v24.18.0/lib/node_modules/npm/lib/cli/validate-engines.js:33:10)
+    at module.exports (/Users/bubee/.nvm/versions/node/v24.18.0/lib/node_modules/npm/lib/cli.js:12:31)
+    at Object.<anonymous> (/Users/bubee/.nvm/versions/node/v24.18.0/lib/node_modules/npm/bin/npm-cli.js:2:25)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+    at Object..js (node:internal/modules/cjs/loader:2002:10) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'uv_cwd'
+}
+
+Node.js v24.18.0
