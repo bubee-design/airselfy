@@ -6,13 +6,15 @@ const workspaceRoot = path.resolve(projectRoot, "../..");
 
 const config = getDefaultConfig(projectRoot);
 
-// Watch the full monorepo so workspace packages (e.g. @workspace/api-client-react)
-// are picked up by Metro without needing a separate install.
-config.watchFolders = [workspaceRoot];
+// Only watch the shared lib packages this app actually imports from.
+// Do NOT watch the entire workspaceRoot — Metro's FallbackWatcher traverses
+// every subdirectory, which breaks on stale or non-existent paths under .local/.
+config.watchFolders = [
+  path.resolve(workspaceRoot, "lib"),
+];
 
-// Resolve node_modules from both the package directory and the workspace root.
-// This handles pnpm's layout where packages are hoisted to the workspace root
-// rather than installed inside artifacts/airselfy/node_modules directly.
+// Resolve node_modules from both the package directory and the workspace root
+// so pnpm's hoisted layout is fully traversable.
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
   path.resolve(workspaceRoot, "node_modules"),

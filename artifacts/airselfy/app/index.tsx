@@ -1,13 +1,14 @@
 import { Redirect } from "expo-router";
+import { useContext } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { useAuth } from "@/context/AuthContext";
+import { AuthContext } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function Index() {
-  const { user, isLoading } = useAuth();
+  const ctx = useContext(AuthContext);
   const colors = useColors();
 
-  if (isLoading) {
+  if (!ctx || ctx.isLoading) {
     return (
       <View
         style={{
@@ -22,6 +23,6 @@ export default function Index() {
     );
   }
 
-  if (user) return <Redirect href="/(tabs)" />;
+  if (ctx.user) return <Redirect href="/(tabs)" />;
   return <Redirect href="/login" />;
 }

@@ -17,7 +17,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = "@airselfy_user";
 
 function getApiBase(): string {
