@@ -29,6 +29,10 @@ description: Key version pins, breaking changes, and peer dep quirks from the Ex
 - `expo-modules-core@56.0.17` wants `react-native-worklets@"^0.7.4 || ^0.8.0"` but 0.10.0 is installed — advisory only
 - `@react-native/metro-config@0.86.0` missing peer — metro.config.js works without it
 
+## iOS deployment target
+
+SDK 56 requires **iOS 16.4 minimum** (raised from 16.0 in SDK 54). All Expo pods fail to link if `app.json` `ios.deploymentTarget` is set below `"16.4"`.
+
 ## Unchanged
 
 - `expo-file-system/legacy` export still exists in SDK 56 — album.tsx and camera.tsx imports are safe

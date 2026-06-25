@@ -1,5 +1,4 @@
-{
-  "cli": {
+{  "cli": {
     "version": ">= 16.0.0",
     "promptToConfigurePushNotifications": false
   },

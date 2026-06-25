@@ -1,0 +1,41 @@
+[!] CocoaPods could not find compatible versions for pod "Expo":
+  In Podfile:
+    Expo (from `../../../node_modules/.pnpm/expo@56.0.12_@babel+core@7.29.0_@expo+metro-runtime@56.0.15_expo-router@56.2.11_react-d_d1d9f9adfd017fe25715fb211984bc83/node_modules/expo`)
+Specs satisfying the `Expo (from `../../../node_modules/.pnpm/expo@56.0.12_@babel+core@7.29.0_@expo+metro-runtime@56.0.15_expo-router@56.2.11_react-d_d1d9f9adfd017fe25715fb211984bc83/node_modules/expo`)` dependency were found, but they required a higher minimum deployment target.
+[!] [Expo] @expo/dom-webview was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] @expo/log-box was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] @expo/ui was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-asset was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-blur was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-camera was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-constants was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-dev-client was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-dev-launcher was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-dev-menu was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-dev-menu-interface was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-file-system was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-font was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-glass-effect was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-haptics was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-image was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-image-picker was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-json-utils was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-keep-awake was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-linear-gradient was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-linking was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-location was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-manifests was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-modules-core was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-modules-core was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-modules-jsi was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-router was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-sensors was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-splash-screen was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-symbols was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-system-ui was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-updates-interface was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-video was not linked: requires iOS 16.4 but app targets 16.0
+[!] [Expo] expo-web-browser was not linked: requires iOS 16.4 but app targets 16.0
+Error: Some pods require a higher minimum deployment target.
+You can use the expo-build-properties config plugin (https://docs.expo.dev/versions/latest/sdk/build-properties/) to override the default native build properties and set a different minimum deployment target.
