@@ -213,7 +213,7 @@ export default function CameraScreen() {
     <View style={{ flex: 1, backgroundColor: "#000" }}>
       {/* Camera view */}
       <CameraComp
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         facing={facing}
         flash={flash ? "on" : "off"}
         mode={type === "photo" ? "picture" : "video"}
@@ -223,12 +223,12 @@ export default function CameraScreen() {
       {/* Flash overlay */}
       <Animated.View
         pointerEvents="none"
-        style={[StyleSheet.absoluteFillObject, { backgroundColor: "#fff", opacity: flashAnim }]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: "#fff", opacity: flashAnim }]}
       />
 
       {/* Captured overlay */}
       {captured && (
-        <View style={[StyleSheet.absoluteFillObject, styles.capturedOverlay]}>
+        <View style={[StyleSheet.absoluteFill, styles.capturedOverlay]}>
           <View style={styles.capturedIcon}>
             <Feather name="check" size={40} color="#4ade80" />
           </View>
@@ -265,7 +265,7 @@ export default function CameraScreen() {
       )}
 
       {/* Grid overlay */}
-      <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
+      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <View style={styles.gridH1} />
         <View style={styles.gridH2} />
         <View style={styles.gridV1} />

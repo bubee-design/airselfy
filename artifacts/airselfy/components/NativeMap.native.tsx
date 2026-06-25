@@ -99,7 +99,7 @@ export default function NativeMap() {
   return (
     <View style={{ flex: 1 }}>
       <MapView
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         provider={PROVIDER_DEFAULT}
         region={region}
         showsUserLocation={false}

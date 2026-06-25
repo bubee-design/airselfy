@@ -1,1 +1,2 @@
 - [Expo react-native-maps web bundling](expo-rnmaps-web.md) — rnmaps imports must live in `components/`, not `app/` — require.context picks up .native.tsx files in app/ on web
+- [SDK 56 upgrade decisions](sdk56-upgrade.md) — key version pins, breaking changes fixed, and peer dep quirks from the SDK 54→56 migration
