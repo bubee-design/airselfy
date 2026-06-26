@@ -16,11 +16,11 @@ paths = [ "/airselfy/" ]
 localPort = 22899
 
 [services.development]
-run = "npm run dev --workspace=@workspace/airselfy"
+run = "pnpm --filter @workspace/airselfy run dev"
 
 [services.production]
-build = [ "npm", "run", "build", "--workspace=@workspace/airselfy" ]
-run = [ "npm", "run", "serve", "--workspace=@workspace/airselfy" ]
+build = [ "pnpm", "--filter", "@workspace/airselfy", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/airselfy", "run", "serve" ]
 
 [services.env]
 PORT = "22899"
