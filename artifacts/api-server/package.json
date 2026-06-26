@@ -14,7 +14,7 @@
     "@workspace/db": "workspace:*",
     "bcryptjs": "^3.0.3",
     "stripe": "^17.7.0",
-    "stripe-replit-sync": "^0.0.14",
+    "stripe-replit-sync": "^1.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "drizzle-orm": "catalog:",
