@@ -373,10 +373,17 @@ export default function WalletScreen() {
             <Text style={[styles.infoTitle, { color: colors.foreground }]}>
               How it works
             </Text>
-            <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>
-              Request photo: $1.00 · Request video: $2.00{"\n"}
-              Fulfil photo: earn $0.80 · Fulfil video: earn $1.60
-            </Text>
+            {user?.userType === "student" ? (
+              <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>
+                🎓 Student perk: requests are free!{"\n"}
+                Fulfil photo: earn $0.80 · Fulfil video: earn $1.60
+              </Text>
+            ) : (
+              <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>
+                Request photo: $1.00 · Request video: $2.00{"\n"}
+                Fulfil photo: earn $0.80 · Fulfil video: earn $1.60
+              </Text>
+            )}
           </View>
         </View>
 

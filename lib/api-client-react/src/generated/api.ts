@@ -24,6 +24,7 @@ import type {
   ErrorResponse,
   HealthStatus,
   LoginInput,
+  SetUserTypeInput,
   SignupInput
 } from './api.schemas';
 
@@ -257,5 +258,76 @@ export const useLogin = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getLoginMutationOptions(options));
+    }
+
+export const getSetUserTypeUrl = () => {
+
+
+
+
+  return `/api/user/type`
+}
+
+/**
+ * @summary Set user type (regular or student)
+ */
+export const setUserType = async (setUserTypeInput: SetUserTypeInput, options?: RequestInit): Promise<AuthUser> => {
+
+  return customFetch<AuthUser>(getSetUserTypeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setUserTypeInput,)
+  }
+);}
+
+
+
+
+export const getSetUserTypeMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setUserType>>, TError,{data: BodyType<SetUserTypeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setUserType>>, TError,{data: BodyType<SetUserTypeInput>}, TContext> => {
+
+const mutationKey = ['setUserType'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setUserType>>, {data: BodyType<SetUserTypeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setUserType(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetUserTypeMutationResult = NonNullable<Awaited<ReturnType<typeof setUserType>>>
+    export type SetUserTypeMutationBody = BodyType<SetUserTypeInput>
+    export type SetUserTypeMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Set user type (regular or student)
+ */
+export const useSetUserType = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setUserType>>, TError,{data: BodyType<SetUserTypeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setUserType>>,
+        TError,
+        {data: BodyType<SetUserTypeInput>},
+        TContext
+      > => {
+      return useMutation(getSetUserTypeMutationOptions(options));
     }
 

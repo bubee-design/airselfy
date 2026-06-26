@@ -5,6 +5,7 @@ import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Modal,
   Pressable,
@@ -16,6 +17,7 @@ import MapView, { Circle, Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NearbyUser, useSocket } from "@/context/SocketContext";
 import { useAuth } from "@/context/AuthContext";
+import { useWallet } from "@/context/WalletContext";
 import { useColors } from "@/hooks/useColors";
 
 const DEFAULT_REGION = {
@@ -25,11 +27,16 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.01,
 };
 
+const PHOTO_COST = 100;
+const VIDEO_COST = 200;
+
 export default function NativeMap() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { nearbyUsers, sendRequest } = useSocket();
   const { user } = useAuth();
+  const { deductCents } = useWallet();
+  const isStudent = user?.userType === "student";
 
   const [region, setRegion] = useState(DEFAULT_REGION);
   const [locationGranted, setLocationGranted] = useState(false);
@@ -77,6 +84,20 @@ export default function NativeMap() {
   function handleSendRequest(type: "photo" | "video", dur?: number) {
     if (!selected) return;
     const target = selected;
+
+    if (!isStudent) {
+      const costCents = type === "photo" ? PHOTO_COST : VIDEO_COST;
+      const ok = deductCents(costCents, type === "photo" ? "Photo Request" : "Video Request");
+      if (!ok) {
+        Alert.alert(
+          "Insufficient Balance",
+          `Add balance to send a ${type} request ($${(costCents / 100).toFixed(2)}).`,
+          [{ text: "OK" }]
+        );
+        return;
+      }
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     sendRequest(target.id, type, dur ?? duration);
     closeSheet();
@@ -189,14 +210,24 @@ export default function NativeMap() {
                     style={[styles.mediaBtn, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "40" }]}
                   >
                     <Feather name="camera" size={20} color={colors.primary} />
-                    <Text style={[styles.mediaBtnText, { color: colors.primary }]}>Photo</Text>
+                    <View style={{ alignItems: "center" }}>
+                      <Text style={[styles.mediaBtnText, { color: colors.primary }]}>Photo</Text>
+                      <Text style={[styles.mediaBtnPrice, { color: colors.primary + "99" }]}>
+                        {isStudent ? "Free" : "$1.00"}
+                      </Text>
+                    </View>
                   </Pressable>
                   <Pressable
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMediaType("video"); setDuration(10); }}
                     style={[styles.mediaBtn, { backgroundColor: colors.accent + "18", borderColor: colors.accent + "40" }]}
                   >
                     <Feather name="video" size={20} color={colors.accent} />
-                    <Text style={[styles.mediaBtnText, { color: colors.accent }]}>Video</Text>
+                    <View style={{ alignItems: "center" }}>
+                      <Text style={[styles.mediaBtnText, { color: colors.accent }]}>Video</Text>
+                      <Text style={[styles.mediaBtnPrice, { color: colors.accent + "99" }]}>
+                        {isStudent ? "Free" : "$2.00"}
+                      </Text>
+                    </View>
                   </Pressable>
                 </View>
               </>
@@ -260,6 +291,7 @@ const styles = StyleSheet.create({
   mediaRow: { flexDirection: "row", gap: 12 },
   mediaBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16, borderRadius: 14, borderWidth: 1 },
   mediaBtnText: { fontSize: 15, fontWeight: "600" as const },
+  mediaBtnPrice: { fontSize: 11, fontWeight: "500" as const, marginTop: 1 },
   backRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   sheetTitle: { fontSize: 16, fontWeight: "600" as const },
   durationRow: { flexDirection: "row", gap: 8 },

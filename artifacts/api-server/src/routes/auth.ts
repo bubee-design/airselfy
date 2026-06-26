@@ -50,6 +50,8 @@ router.post("/auth/signup", async (req, res): Promise<void> => {
     name: user.name,
     email: user.email,
     initials: user.initials,
+    userType: user.userType ?? null,
+    studentProfile: user.studentProfile ?? null,
   });
   res.status(201).json(response);
 });
@@ -86,6 +88,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     name: user.name,
     email: user.email,
     initials: user.initials,
+    userType: user.userType ?? null,
+    studentProfile: user.studentProfile ?? null,
   });
   res.json(response);
 });

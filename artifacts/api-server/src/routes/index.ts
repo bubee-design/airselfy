@@ -4,6 +4,7 @@ import authRouter from "./auth";
 import mediaRouter from "./media";
 import walletRouter from "./wallet";
 import stripeRouter from "./stripe";
+import userRouter from "./user";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(authRouter);
 router.use(mediaRouter);
 router.use(walletRouter);
 router.use(stripeRouter);
+router.use(userRouter);
 
 export default router;

@@ -10,4 +10,7 @@ export * from './authUser';
 export * from './errorResponse';
 export * from './healthStatus';
 export * from './loginInput';
+export * from './setUserTypeInput';
+export * from './setUserTypeInputUserType';
 export * from './signupInput';
+export * from './studentProfile';

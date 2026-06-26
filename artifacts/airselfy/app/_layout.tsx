@@ -36,8 +36,15 @@ function RootLayoutNav() {
       currentScreen === "login" ||
       currentScreen === "signup" ||
       currentScreen === "goodbye";
+
     if (!user && !isPublicScreen) {
       router.replace("/login");
+      return;
+    }
+
+    if (user && !user.userType && currentScreen !== "onboarding" && !isPublicScreen) {
+      router.replace("/onboarding");
+      return;
     }
   }, [user, isLoading, segments]);
 
@@ -47,6 +54,7 @@ function RootLayoutNav() {
       <Stack.Screen name="login" />
       <Stack.Screen name="signup" />
       <Stack.Screen name="goodbye" />
+      <Stack.Screen name="onboarding" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="compass" />
       <Stack.Screen name="camera" />

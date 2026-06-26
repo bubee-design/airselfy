@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -9,6 +9,8 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   initials: text("initials").notNull(),
   stripeCustomerId: text("stripe_customer_id"),
+  userType: text("user_type"),
+  studentProfile: jsonb("student_profile"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

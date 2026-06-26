@@ -25,11 +25,40 @@ export interface LoginInput {
   password: string;
 }
 
+export interface StudentProfile {
+  /** @minLength 1 */
+  fullName: string;
+  /** @minLength 1 */
+  email: string;
+  /** @minLength 1 */
+  gender: string;
+  /** @minLength 1 */
+  degree: string;
+  /** @minLength 1 */
+  university: string;
+}
+
+export type SetUserTypeInputUserType = typeof SetUserTypeInputUserType[keyof typeof SetUserTypeInputUserType];
+
+
+export const SetUserTypeInputUserType = {
+  regular: 'regular',
+  student: 'student',
+} as const;
+
+export interface SetUserTypeInput {
+  userId: string;
+  userType: SetUserTypeInputUserType;
+  studentProfile?: StudentProfile;
+}
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   initials: string;
+  userType?: string | null;
+  studentProfile?: StudentProfile | null;
 }
 
 export interface ErrorResponse {

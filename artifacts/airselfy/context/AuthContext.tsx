@@ -2,11 +2,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Platform } from "react-native";
 
+export interface StudentProfile {
+  fullName: string;
+  email: string;
+  gender: string;
+  degree: string;
+  university: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   initials: string;
+  userType?: string | null;
+  studentProfile?: StudentProfile | null;
 }
 
 interface AuthContextType {
@@ -15,6 +25,10 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean | string>;
   signup: (name: string, email: string, password: string) => Promise<boolean | string>;
   logout: () => Promise<void>;
+  setUserType: (
+    userType: "regular" | "student",
+    studentProfile?: StudentProfile
+  ) => Promise<boolean | string>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -65,6 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: data.name,
         email: data.email,
         initials: data.initials,
+        userType: data.userType ?? null,
+        studentProfile: data.studentProfile ?? null,
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
       setUser(newUser);
@@ -99,9 +115,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: data.name,
         email: data.email,
         initials: data.initials,
+        userType: data.userType ?? null,
+        studentProfile: data.studentProfile ?? null,
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(loggedInUser));
       setUser(loggedInUser);
+      return true;
+    } catch {
+      return "Unable to connect. Please check your connection.";
+    }
+  }
+
+  async function setUserType(
+    userType: "regular" | "student",
+    studentProfile?: StudentProfile
+  ): Promise<boolean | string> {
+    if (!user) return "Not logged in.";
+    try {
+      const res = await fetch(`${getApiBase()}/user/type`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          userType,
+          ...(studentProfile ? { studentProfile } : {}),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return data.error ?? "Something went wrong. Please try again.";
+      }
+
+      const updatedUser: User = {
+        ...user,
+        userType: data.userType ?? userType,
+        studentProfile: data.studentProfile ?? studentProfile ?? null,
+      };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+      setUser(updatedUser);
       return true;
     } catch {
       return "Unable to connect. Please check your connection.";
@@ -114,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, setUserType }}>
       {children}
     </AuthContext.Provider>
   );

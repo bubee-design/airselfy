@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: auth
     description: Authentication operations
+  - name: user
+    description: User operations
 paths:
   /healthz:
     get:
@@ -86,6 +88,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /user/type:
+    post:
+      operationId: setUserType
+      tags: [user]
+      summary: Set user type (regular or student)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetUserTypeInput"
+      responses:
+        "200":
+          description: User type updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -118,6 +150,36 @@ components:
         password:
           type: string
           minLength: 1
+    StudentProfile:
+      type: object
+      required: [fullName, email, gender, degree, university]
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          minLength: 1
+        gender:
+          type: string
+          minLength: 1
+        degree:
+          type: string
+          minLength: 1
+        university:
+          type: string
+          minLength: 1
+    SetUserTypeInput:
+      type: object
+      required: [userId, userType]
+      properties:
+        userId:
+          type: string
+        userType:
+          type: string
+          enum: [regular, student]
+        studentProfile:
+          $ref: "#/components/schemas/StudentProfile"
     AuthUser:
       type: object
       required: [id, name, email, initials]
@@ -130,6 +192,12 @@ components:
           type: string
         initials:
           type: string
+        userType:
+          type: string
+          nullable: true
+        studentProfile:
+          $ref: "#/components/schemas/StudentProfile"
+          nullable: true
     ErrorResponse:
       type: object
       required: [error]

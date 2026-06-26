@@ -5,10 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { StudentProfile } from './studentProfile';
 
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   initials: string;
+  userType?: string | null;
+  studentProfile?: StudentProfile | null;
 }

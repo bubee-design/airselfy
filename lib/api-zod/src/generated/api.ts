@@ -45,11 +45,71 @@ export const LoginBody = zod.object({
   "password": zod.string().min(1)
 })
 
+
+
+
+
+
+
+
 export const LoginResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "email": zod.string(),
-  "initials": zod.string()
+  "initials": zod.string(),
+  "userType": zod.string().nullish(),
+  "studentProfile": zod.object({
+  "fullName": zod.string().min(1),
+  "email": zod.string().min(1),
+  "gender": zod.string().min(1),
+  "degree": zod.string().min(1),
+  "university": zod.string().min(1)
+}).nullish()
+})
+
+
+/**
+ * @summary Set user type (regular or student)
+ */
+
+
+
+
+
+
+
+export const SetUserTypeBody = zod.object({
+  "userId": zod.string(),
+  "userType": zod.enum(['regular', 'student']),
+  "studentProfile": zod.object({
+  "fullName": zod.string().min(1),
+  "email": zod.string().min(1),
+  "gender": zod.string().min(1),
+  "degree": zod.string().min(1),
+  "university": zod.string().min(1)
+}).optional()
+})
+
+
+
+
+
+
+
+
+export const SetUserTypeResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "initials": zod.string(),
+  "userType": zod.string().nullish(),
+  "studentProfile": zod.object({
+  "fullName": zod.string().min(1),
+  "email": zod.string().min(1),
+  "gender": zod.string().min(1),
+  "degree": zod.string().min(1),
+  "university": zod.string().min(1)
+}).nullish()
 })
 
 
