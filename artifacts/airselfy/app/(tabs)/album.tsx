@@ -228,14 +228,14 @@ export default function AlbumScreen() {
                 {hasImage ? (
                   <Image
                     source={{ uri: item.uri }}
-                    style={StyleSheet.absoluteFill}
+                    style={StyleSheet.absoluteFillObject}
                     resizeMode="cover"
                   />
                 ) : (
                   <>
                     <LinearGradient
                       colors={[col + "18", col + "06"]}
-                      style={StyleSheet.absoluteFill}
+                      style={StyleSheet.absoluteFillObject}
                     />
                     <View style={[styles.gridIcon, { backgroundColor: col + "20", borderColor: col + "40" }]}>
                       <Feather name={item.type === "photo" ? "camera" : "video"} size={24} color={col} />

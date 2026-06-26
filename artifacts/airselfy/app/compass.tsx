@@ -401,7 +401,7 @@ export default function CompassScreen() {
       {declinedBy && (
         <View
           style={[
-            StyleSheet.absoluteFill,
+            StyleSheet.absoluteFillObject,
             {
               backgroundColor: colors.background + "F4",
               alignItems: "center",
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
   arrivedOverlay: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     borderRadius: 140,
     alignItems: "center",
     justifyContent: "center",

@@ -66,7 +66,7 @@ export default function NativeMap() {
       >
         {/* "You" card */}
         <View style={[styles.userCard, styles.youCard, { backgroundColor: colors.card, borderColor: colors.primary + "60" }]}>
-          <LinearGradient colors={[colors.primary + "20", "transparent"]} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={[colors.primary + "20", "transparent"]} style={StyleSheet.absoluteFillObject} />
           <View style={[styles.avatar, { backgroundColor: colors.primary + "25", borderColor: colors.primary + "60" }]}>
             <Text style={[styles.avatarText, { color: colors.primary }]}>{user?.initials ?? "ME"}</Text>
           </View>
@@ -81,7 +81,7 @@ export default function NativeMap() {
             onPress={() => openSheet(u)}
             style={({ pressed }) => [styles.userCard, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
           >
-            <LinearGradient colors={[u.color + "10", "transparent"]} style={StyleSheet.absoluteFill} />
+            <LinearGradient colors={[u.color + "10", "transparent"]} style={StyleSheet.absoluteFillObject} />
             <View style={[styles.avatar, { backgroundColor: u.color + "20", borderColor: u.color + "50" }]}>
               <Text style={[styles.avatarText, { color: u.color }]}>{u.initials}</Text>
             </View>

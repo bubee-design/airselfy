@@ -67,7 +67,7 @@ Change these in `app.json` (`ios.bundleIdentifier` / `android.package`) before r
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- Mobile: Expo SDK 56 / React Native 0.86.0 (new architecture enabled)
+- Mobile: Expo SDK 54 / React Native 0.81.5 (new architecture enabled)
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -89,8 +89,8 @@ Change these in `app.json` (`ios.bundleIdentifier` / `android.package`) before r
 
 - Light mode only — `userInterfaceStyle: "light"` in `app.json`; `useColors()` hook always returns `colors.light`
 - `expo-file-system/legacy` static imports in `album.tsx` and `camera.tsx` — required to avoid SDK 54 / Metro bundler version mismatch
-- iOS deployment target: `16.4` minimum — SDK 56 raised it from 16.0; all Expo pods require ≥ 16.4
-- `react-native-maps` at `1.27.2` — do NOT add to `plugins` in `app.json`
+- iOS deployment target: `16.0` minimum
+- `react-native-maps` pinned at `1.18.0` — do NOT upgrade or add to `plugins` in `app.json`
 - New Architecture (`newArchEnabled: true`) — enabled globally; all native modules must support it
 - `expo-dev-client` included — required for EAS development builds (custom native dev client)
 
