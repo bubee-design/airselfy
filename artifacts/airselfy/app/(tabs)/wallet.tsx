@@ -7,7 +7,6 @@ import {
   Animated,
   Platform,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,89 +14,107 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
-import { useWallet, type WalletTransaction } from "@/context/WalletContext";
+import { type Transaction, type TransactionType, useWallet } from "@/context/WalletContext";
 import { useColors } from "@/hooks/useColors";
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
+function usd(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+function formatDate(date: Date): string {
   const now = new Date();
-  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
-  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function groupByDate(txs: WalletTransaction[]): Array<{ date: string; items: WalletTransaction[] }> {
-  const map = new Map<string, WalletTransaction[]>();
+function groupByDate(
+  txs: Transaction[]
+): Array<{ date: string; items: Transaction[] }> {
+  const map = new Map<string, Transaction[]>();
   for (const tx of txs) {
-    const label = formatDate(tx.createdAt);
+    const label = formatDate(tx.date);
     if (!map.has(label)) map.set(label, []);
     map.get(label)!.push(tx);
   }
   return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
 }
 
-function TransactionIcon({ type, amount }: { type: string; amount: number }) {
+const TX_META: Record<
+  TransactionType,
+  { bg: string; icon: keyof typeof Feather.glyphMap; color: string; sign: string }
+> = {
+  topup:    { bg: "#DCFCE7", icon: "arrow-up-circle",  color: "#16A34A", sign: "+" },
+  earn:     { bg: "#DBEAFE", icon: "check-circle",     color: "#2563EB", sign: "+" },
+  spend:    { bg: "#FEE2E2", icon: "minus-circle",     color: "#DC2626", sign: "-" },
+  withdraw: { bg: "#FEF3C7", icon: "arrow-down-circle", color: "#D97706", sign: "-" },
+};
+
+function TxRow({ tx }: { tx: Transaction }) {
   const colors = useColors();
-  const isPositive = amount > 0;
-  const isTopup = type === "topup";
-
-  const bgColor = isPositive ? "#DCFCE7" : "#FEE2E2";
-  const iconColor = isPositive ? "#16A34A" : "#DC2626";
-  const iconName: keyof typeof Feather.glyphMap = isTopup
-    ? "arrow-up-circle"
-    : isPositive
-    ? "check-circle"
-    : "minus-circle";
-
+  const meta = TX_META[tx.type];
   return (
-    <View style={[styles.txIcon, { backgroundColor: bgColor }]}>
-      <Feather name={iconName} size={18} color={iconColor} />
+    <View style={styles.txRow}>
+      <View style={[styles.txIcon, { backgroundColor: meta.bg }]}>
+        <Feather name={meta.icon} size={18} color={meta.color} />
+      </View>
+      <View style={styles.txInfo}>
+        <Text style={[styles.txLabel, { color: colors.foreground }]} numberOfLines={1}>
+          {tx.label}
+        </Text>
+        <Text style={[styles.txTime, { color: colors.mutedForeground }]}>
+          {formatTime(tx.date)}
+        </Text>
+      </View>
+      <Text style={[styles.txAmount, { color: meta.color }]}>
+        {meta.sign}{usd(tx.amount)}
+      </Text>
     </View>
   );
 }
 
+// ── Top-up sheet ──────────────────────────────────────────────────────────────
+
+const TOP_UP_OPTIONS = [
+  { cents: 200,  label: "$2",  sub: "200¢" },
+  { cents: 500,  label: "$5",  sub: "500¢" },
+  { cents: 1000, label: "$10", sub: "1000¢" },
+];
+
 function TopUpSheet({
-  onTopUp,
+  onConfirm,
   onClose,
 }: {
-  onTopUp: (amount: number) => Promise<void>;
+  onConfirm: (cents: number) => void;
   onClose: () => void;
 }) {
   const colors = useColors();
   const [selected, setSelected] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const slideAnim = useRef(new Animated.Value(300)).current;
+  const slideAnim = useRef(new Animated.Value(320)).current;
 
   useEffect(() => {
-    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 80, friction: 12 }).start();
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 80,
+      friction: 12,
+    }).start();
   }, []);
 
-  const options = [
-    { amount: 50, label: "50 Credits", price: "$0.99" },
-    { amount: 100, label: "100 Credits", price: "$1.99" },
-    { amount: 200, label: "200 Credits", price: "$3.49" },
-  ];
-
-  async function handleConfirm() {
-    if (!selected || loading) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setLoading(true);
-    try {
-      await onTopUp(selected);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onClose();
-    } finally {
-      setLoading(false);
-    }
+  function handleConfirm() {
+    if (!selected) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onConfirm(selected);
+    onClose();
   }
 
   return (
-    <View style={[StyleSheet.absoluteFill, styles.sheetOverlay]}>
+    <View style={[StyleSheet.absoluteFill, styles.overlay]}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       <Animated.View
         style={[
@@ -106,84 +123,157 @@ function TopUpSheet({
         ]}
       >
         <View style={[styles.sheetHandle, { backgroundColor: colors.muted }]} />
-        <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Add Credits</Text>
-        <Text style={[styles.sheetSubtitle, { color: colors.mutedForeground }]}>
-          Choose how many credits to add
+        <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Add Balance</Text>
+        <Text style={[styles.sheetSub, { color: colors.mutedForeground }]}>
+          Choose an amount to top up your spending balance
         </Text>
+
         <View style={styles.optionsRow}>
-          {options.map((opt) => (
+          {TOP_UP_OPTIONS.map((opt) => (
             <Pressable
-              key={opt.amount}
+              key={opt.cents}
               style={[
                 styles.option,
                 {
-                  borderColor: selected === opt.amount ? colors.primary : colors.border,
-                  backgroundColor: selected === opt.amount ? colors.primary + "12" : colors.card,
+                  borderColor: selected === opt.cents ? colors.primary : colors.border,
+                  backgroundColor:
+                    selected === opt.cents ? colors.primary + "14" : colors.card,
                 },
               ]}
               onPress={() => {
                 Haptics.selectionAsync();
-                setSelected(opt.amount);
+                setSelected(opt.cents);
               }}
             >
-              <Text style={[styles.optionCredits, { color: selected === opt.amount ? colors.primary : colors.foreground }]}>
+              <Text
+                style={[
+                  styles.optionMain,
+                  { color: selected === opt.cents ? colors.primary : colors.foreground },
+                ]}
+              >
                 {opt.label}
               </Text>
-              <Text style={[styles.optionPrice, { color: colors.mutedForeground }]}>{opt.price}</Text>
+              <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>
+                {opt.sub}
+              </Text>
             </Pressable>
           ))}
         </View>
+
         <Pressable
           onPress={handleConfirm}
-          disabled={!selected || loading}
+          disabled={!selected}
           style={({ pressed }) => [
             styles.confirmBtn,
             {
-              backgroundColor: !selected ? colors.muted : colors.primary,
+              backgroundColor: selected ? colors.primary : colors.muted,
               opacity: pressed ? 0.85 : 1,
             },
           ]}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.confirmBtnText}>
-              {selected ? `Add ${selected} Credits` : "Select an option"}
-            </Text>
-          )}
+          <Text style={styles.confirmText}>
+            {selected ? `Add ${usd(selected)}` : "Select an amount"}
+          </Text>
         </Pressable>
       </Animated.View>
     </View>
   );
 }
 
+// ── Withdraw sheet ────────────────────────────────────────────────────────────
+
+function WithdrawSheet({
+  earningsCents,
+  onConfirm,
+  onClose,
+}: {
+  earningsCents: number;
+  onConfirm: (cents: number) => void;
+  onClose: () => void;
+}) {
+  const colors = useColors();
+  const slideAnim = useRef(new Animated.Value(320)).current;
+
+  useEffect(() => {
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 80,
+      friction: 12,
+    }).start();
+  }, []);
+
+  function handleAll() {
+    if (earningsCents <= 0) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onConfirm(earningsCents);
+    onClose();
+  }
+
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.overlay]}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      <Animated.View
+        style={[
+          styles.sheet,
+          { backgroundColor: colors.background, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        <View style={[styles.sheetHandle, { backgroundColor: colors.muted }]} />
+        <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Withdraw Earnings</Text>
+        <Text style={[styles.sheetSub, { color: colors.mutedForeground }]}>
+          Transfer your fulfillment earnings to your bank account
+        </Text>
+
+        <View style={[styles.earningsPreview, { backgroundColor: colors.secondary }]}>
+          <Text style={[styles.earningsPreviewLabel, { color: colors.mutedForeground }]}>
+            Available to withdraw
+          </Text>
+          <Text style={[styles.earningsPreviewAmt, { color: colors.foreground }]}>
+            {usd(earningsCents)}
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={handleAll}
+          disabled={earningsCents <= 0}
+          style={({ pressed }) => [
+            styles.confirmBtn,
+            {
+              backgroundColor: earningsCents > 0 ? "#16A34A" : colors.muted,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Text style={styles.confirmText}>
+            {earningsCents > 0 ? `Withdraw ${usd(earningsCents)}` : "Nothing to withdraw"}
+          </Text>
+        </Pressable>
+      </Animated.View>
+    </View>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
+
 export default function WalletScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { balance, totalEarned, totalSpent, transactions, loading, topUp, refresh } = useWallet();
-  const [showTopUp, setShowTopUp] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const { balanceCents, earningsCents, transactions, topUpCents, withdrawEarnings } =
+    useWallet();
+
+  const [sheet, setSheet] = useState<"topup" | "withdraw" | null>(null);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 100 : 100;
-
   const grouped = groupByDate(transactions);
-
-  async function handleRefresh() {
-    setRefreshing(true);
-    await refresh();
-    setRefreshing(false);
-  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: topPad + 16, paddingBottom: bottomPad }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
-        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -205,72 +295,75 @@ export default function WalletScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.balanceCard}
         >
-          <Text style={styles.balanceLabel}>Available Credits</Text>
-          <View style={styles.balanceRow}>
-            {loading && !balance ? (
-              <ActivityIndicator color="#fff" size="large" />
-            ) : (
-              <>
-                <Text style={styles.balanceAmount}>{balance}</Text>
-                <Text style={styles.balanceUnit}>credits</Text>
-              </>
-            )}
+          {/* Spending balance */}
+          <View style={styles.balanceTop}>
+            <Text style={styles.balanceLabel}>Spending Balance</Text>
+            <Text style={styles.balanceAmt}>{usd(balanceCents)}</Text>
           </View>
 
-          {/* Stats */}
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statLabel}>Total Earned</Text>
-              <Text style={styles.statValue}>+{totalEarned}</Text>
+          {/* Earnings tile */}
+          <View style={styles.earningsTile}>
+            <View>
+              <Text style={styles.earningsLabel}>Your Earnings</Text>
+              <Text style={styles.earningsAmt}>{usd(earningsCents)}</Text>
             </View>
-            <View style={[styles.statBox, { marginLeft: 10 }]}>
-              <Text style={styles.statLabel}>Total Spent</Text>
-              <Text style={styles.statValue}>-{totalSpent}</Text>
-            </View>
+            <Pressable
+              style={({ pressed }) => [styles.withdrawBtn, { opacity: pressed ? 0.75 : 1 }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSheet("withdraw");
+              }}
+            >
+              <Feather name="arrow-down-circle" size={14} color="rgba(255,255,255,0.9)" />
+              <Text style={styles.withdrawBtnText}>Withdraw</Text>
+            </Pressable>
           </View>
 
-          {/* Add credits bar */}
+          {/* Add balance bar */}
           <Pressable
             style={({ pressed }) => [styles.addBar, { opacity: pressed ? 0.8 : 1 }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowTopUp(true);
+              setSheet("topup");
             }}
           >
             <View style={styles.addBarLeft}>
               <Feather name="plus-circle" size={16} color="rgba(255,255,255,0.9)" />
-              <Text style={styles.addBarText}>Add Credits</Text>
+              <Text style={styles.addBarText}>Add Balance</Text>
             </View>
             <View style={styles.pillsRow}>
-              {[50, 100, 200].map((a) => (
-                <View key={a} style={styles.pill}>
-                  <Text style={styles.pillText}>{a}</Text>
+              {TOP_UP_OPTIONS.map((o) => (
+                <View key={o.cents} style={styles.pill}>
+                  <Text style={styles.pillText}>{o.label}</Text>
                 </View>
               ))}
             </View>
           </Pressable>
         </LinearGradient>
 
-        {/* How credits work */}
+        {/* Info card */}
         <View style={[styles.infoCard, { backgroundColor: colors.secondary }]}>
           <View style={[styles.infoIcon, { backgroundColor: colors.primary + "20" }]}>
             <Feather name="info" size={15} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.infoTitle, { color: colors.foreground }]}>How credits work</Text>
+            <Text style={[styles.infoTitle, { color: colors.foreground }]}>
+              How it works
+            </Text>
             <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>
-              Request photo: 10 cr · Request video: 20 cr{"\n"}
-              Fulfil photo: earn 8 cr · Fulfil video: earn 16 cr
+              Request photo: $1.00 · Request video: $2.00{"\n"}
+              Fulfil photo: earn $0.80 · Fulfil video: earn $1.60
             </Text>
           </View>
         </View>
 
-        {/* Transaction history */}
+        {/* Transactions */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Transactions</Text>
-          {loading && transactions.length === 0 ? (
-            <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
-          ) : transactions.length === 0 ? (
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Transactions
+          </Text>
+
+          {transactions.length === 0 ? (
             <View style={styles.empty}>
               <Feather name="inbox" size={36} color={colors.mutedForeground} />
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
@@ -280,31 +373,23 @@ export default function WalletScreen() {
           ) : (
             grouped.map(({ date, items }) => (
               <View key={date} style={{ marginBottom: 20 }}>
-                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>{date}</Text>
-                <View style={[styles.txGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>
+                  {date}
+                </Text>
+                <View
+                  style={[
+                    styles.txGroup,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                  ]}
+                >
                   {items.map((tx, i) => (
                     <View key={tx.id}>
-                      {i > 0 && <View style={[styles.txDivider, { backgroundColor: colors.border }]} />}
-                      <View style={styles.txRow}>
-                        <TransactionIcon type={tx.type} amount={tx.amount} />
-                        <View style={styles.txInfo}>
-                          <Text style={[styles.txDesc, { color: colors.foreground }]} numberOfLines={1}>
-                            {tx.description}
-                          </Text>
-                          <Text style={[styles.txTime, { color: colors.mutedForeground }]}>
-                            {formatTime(tx.createdAt)}
-                          </Text>
-                        </View>
-                        <Text
-                          style={[
-                            styles.txAmount,
-                            { color: tx.amount > 0 ? "#16A34A" : "#DC2626" },
-                          ]}
-                        >
-                          {tx.amount > 0 ? "+" : ""}
-                          {tx.amount}
-                        </Text>
-                      </View>
+                      {i > 0 && (
+                        <View
+                          style={[styles.txDivider, { backgroundColor: colors.border }]}
+                        />
+                      )}
+                      <TxRow tx={tx} />
                     </View>
                   ))}
                 </View>
@@ -314,15 +399,28 @@ export default function WalletScreen() {
         </View>
       </ScrollView>
 
-      {showTopUp && (
-        <TopUpSheet onTopUp={topUp} onClose={() => setShowTopUp(false)} />
+      {sheet === "topup" && (
+        <TopUpSheet
+          onConfirm={(cents) => topUpCents(cents, "Balance Top-Up")}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {sheet === "withdraw" && (
+        <WithdrawSheet
+          earningsCents={earningsCents}
+          onConfirm={(cents) => withdrawEarnings(cents, "Withdrawal")}
+          onClose={() => setSheet(null)}
+        />
       )}
     </View>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -347,32 +445,53 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 14,
   },
+  balanceTop: { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 16 },
   balanceLabel: {
-    color: "rgba(255,255,255,0.75)",
+    color: "rgba(255,255,255,0.72)",
     fontSize: 13,
     fontWeight: "500",
-    marginTop: 22,
-    marginHorizontal: 22,
+    marginBottom: 4,
   },
-  balanceRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
+  balanceAmt: {
+    color: "#fff",
+    fontSize: 48,
+    fontWeight: "800",
+    letterSpacing: -1.5,
+  },
+
+  earningsTile: {
     marginHorizontal: 22,
-    marginTop: 4,
     marginBottom: 16,
-    gap: 6,
-  },
-  balanceAmount: { color: "#fff", fontSize: 52, fontWeight: "800", letterSpacing: -2 },
-  balanceUnit: { color: "rgba(255,255,255,0.8)", fontSize: 18, marginBottom: 8 },
-  statsRow: { flexDirection: "row", marginHorizontal: 22, marginBottom: 16, gap: 0 },
-  statBox: {
-    flex: 1,
     backgroundColor: "rgba(255,255,255,0.18)",
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  statLabel: { color: "rgba(255,255,255,0.75)", fontSize: 11, fontWeight: "500", marginBottom: 2 },
-  statValue: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  earningsLabel: {
+    color: "rgba(255,255,255,0.75)",
+    fontSize: 12,
+    fontWeight: "500",
+    marginBottom: 3,
+  },
+  earningsAmt: { color: "#fff", fontSize: 22, fontWeight: "700" },
+  withdrawBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  withdrawBtnText: {
+    color: "rgba(255,255,255,0.95)",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
   addBar: {
     backgroundColor: "rgba(255,255,255,0.12)",
     paddingHorizontal: 22,
@@ -392,7 +511,7 @@ const styles = StyleSheet.create({
   },
   pillText: { color: "#fff", fontSize: 12, fontWeight: "600" },
 
-  // Info card
+  // Info
   infoCard: {
     marginHorizontal: 16,
     borderRadius: 16,
@@ -435,16 +554,15 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   txInfo: { flex: 1, minWidth: 0 },
-  txDesc: { fontSize: 14, fontWeight: "500", marginBottom: 2 },
+  txLabel: { fontSize: 14, fontWeight: "500", marginBottom: 2 },
   txTime: { fontSize: 12 },
   txAmount: { fontSize: 15, fontWeight: "700" },
 
-  // Empty state
   empty: { alignItems: "center", paddingTop: 48, gap: 12 },
   emptyText: { fontSize: 15, fontWeight: "500" },
 
-  // Top-up sheet
-  sheetOverlay: {
+  // Sheets
+  overlay: {
     backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-end",
     zIndex: 100,
@@ -464,7 +582,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sheetTitle: { fontSize: 20, fontWeight: "700", marginBottom: 6, letterSpacing: -0.4 },
-  sheetSubtitle: { fontSize: 14, marginBottom: 20 },
+  sheetSub: { fontSize: 14, marginBottom: 20, lineHeight: 20 },
   optionsRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
   option: {
     flex: 1,
@@ -474,12 +592,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-  optionCredits: { fontSize: 13, fontWeight: "700" },
-  optionPrice: { fontSize: 12 },
-  confirmBtn: {
+  optionMain: { fontSize: 18, fontWeight: "700" },
+  optionSub: { fontSize: 11 },
+  confirmBtn: { borderRadius: 16, paddingVertical: 16, alignItems: "center" },
+  confirmText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+
+  earningsPreview: {
     borderRadius: 16,
-    paddingVertical: 16,
+    padding: 18,
     alignItems: "center",
+    marginBottom: 20,
   },
-  confirmBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  earningsPreviewLabel: { fontSize: 13, marginBottom: 6 },
+  earningsPreviewAmt: { fontSize: 32, fontWeight: "800", letterSpacing: -1 },
 });
