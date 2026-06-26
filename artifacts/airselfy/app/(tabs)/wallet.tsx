@@ -90,9 +90,11 @@ const TOP_UP_OPTIONS = [
 function TopUpSheet({
   onConfirm,
   onClose,
+  bottomInset,
 }: {
   onConfirm: (cents: number) => Promise<void>;
   onClose: () => void;
+  bottomInset: number;
 }) {
   const colors = useColors();
   const [selected, setSelected] = useState<number | null>(null);
@@ -124,7 +126,7 @@ function TopUpSheet({
       <Animated.View
         style={[
           styles.sheet,
-          { backgroundColor: colors.background, transform: [{ translateY: slideAnim }] },
+          { backgroundColor: colors.background, transform: [{ translateY: slideAnim }], paddingBottom: 24 + bottomInset },
         ]}
       >
         <View style={[styles.sheetHandle, { backgroundColor: colors.muted }]} />
@@ -192,10 +194,12 @@ function WithdrawSheet({
   earningsCents,
   onConfirm,
   onClose,
+  bottomInset,
 }: {
   earningsCents: number;
   onConfirm: (cents: number) => void;
   onClose: () => void;
+  bottomInset: number;
 }) {
   const colors = useColors();
   const slideAnim = useRef(new Animated.Value(320)).current;
@@ -222,7 +226,7 @@ function WithdrawSheet({
       <Animated.View
         style={[
           styles.sheet,
-          { backgroundColor: colors.background, transform: [{ translateY: slideAnim }] },
+          { backgroundColor: colors.background, transform: [{ translateY: slideAnim }], paddingBottom: 24 + bottomInset },
         ]}
       >
         <View style={[styles.sheetHandle, { backgroundColor: colors.muted }]} />
@@ -422,6 +426,7 @@ export default function WalletScreen() {
         <TopUpSheet
           onConfirm={handleTopUp}
           onClose={() => setSheet(null)}
+          bottomInset={insets.bottom}
         />
       )}
       {sheet === "withdraw" && (
@@ -429,6 +434,7 @@ export default function WalletScreen() {
           earningsCents={earningsCents}
           onConfirm={(cents) => withdrawEarnings(cents, "Withdrawal")}
           onClose={() => setSheet(null)}
+          bottomInset={insets.bottom}
         />
       )}
     </View>
@@ -591,7 +597,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingTop: 12,
     paddingHorizontal: 20,
-    paddingBottom: 40,
   },
   sheetHandle: {
     width: 40,
