@@ -6,63 +6,21 @@ settings:
 
 catalogs:
   default:
-    '@replit/vite-plugin-cartographer':
-      specifier: ^0.5.21
-      version: 0.5.21
-    '@replit/vite-plugin-runtime-error-modal':
-      specifier: ^0.0.6
-      version: 0.0.6
-    '@tailwindcss/vite':
-      specifier: ^4.1.14
-      version: 4.3.0
     '@tanstack/react-query':
       specifier: ^5.90.21
       version: 5.100.9
-    '@types/node':
-      specifier: ^25.3.3
-      version: 25.6.2
     '@types/react':
       specifier: ^19.2.0
       version: 19.2.14
     '@types/react-dom':
       specifier: ^19.2.0
       version: 19.2.3
-    '@vitejs/plugin-react':
-      specifier: ^5.0.4
-      version: 5.2.0
-    class-variance-authority:
-      specifier: ^0.7.1
-      version: 0.7.1
-    clsx:
-      specifier: ^2.1.1
-      version: 2.1.1
-    drizzle-orm:
-      specifier: ^0.45.2
-      version: 0.45.2
-    framer-motion:
-      specifier: ^12.23.24
-      version: 12.38.0
-    lucide-react:
-      specifier: ^0.545.0
-      version: 0.545.0
     react:
       specifier: 19.1.0
       version: 19.1.0
     react-dom:
       specifier: 19.1.0
       version: 19.1.0
-    tailwind-merge:
-      specifier: ^3.3.1
-      version: 3.5.0
-    tailwindcss:
-      specifier: ^4.1.14
-      version: 4.3.0
-    tsx:
-      specifier: ^4.21.0
-      version: 4.21.0
-    vite:
-      specifier: ^7.3.2
-      version: 7.3.3
     zod:
       specifier: ^3.25.76
       version: 3.25.76
@@ -185,6 +143,9 @@ importers:
       expo-video:
         specifier: ~3.0.16
         version: 3.0.16(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.1.0))(react@19.1.0)
+      leaflet:
+        specifier: ^1.9.4
+        version: 1.9.4
       react-native-maps:
         specifier: 1.18.0
         version: 1.18.0(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.1.0))(react@19.1.0)
@@ -216,6 +177,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.100.9(react@19.1.0)
+      '@types/leaflet':
+        specifier: ^1.9.21
+        version: 1.9.21
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
@@ -2524,6 +2488,9 @@ packages:
   '@types/keyv@3.1.4':
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==}
 
+  '@types/leaflet@1.9.21':
+    resolution: {integrity: sha512-TbAd9DaPGSnzp6QvtYngntMZgcRk+igFELwR2N99XZn7RXUdKgsXMR+28bUO0rPsWp8MIu/f47luLIQuSLYv/w==}
+
   '@types/node@25.6.2':
     resolution: {integrity: sha512-sokuT28dxf9JT5Kady1fsXOvI4HVpjZa95NKT5y9PNTIrs2AsobR4GFAA90ZG8M+nxVRLysCXsVj6eGC7Vbrlw==}
 
@@ -4165,6 +4132,9 @@ packages:
   lan-network@0.2.1:
     resolution: {integrity: sha512-ONPnazC96VKDntab9j9JKwIWhZ4ZUceB4A9Epu4Ssg0hYFmtHZSeQ+n15nIwTFmcBUKtExOer8WTJ4GF9MO64A==}
     hasBin: true
+
+  leaflet@1.9.4:
+    resolution: {integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==}
 
   leven@3.1.0:
     resolution: {integrity: sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==}
@@ -8422,6 +8392,10 @@ snapshots:
     dependencies:
       '@types/node': 25.6.2
 
+  '@types/leaflet@1.9.21':
+    dependencies:
+      '@types/geojson': 7946.0.16
+
   '@types/node@25.6.2':
     dependencies:
       undici-types: 7.19.2
@@ -10099,6 +10073,8 @@ snapshots:
   lan-network@0.1.7: {}
 
   lan-network@0.2.1: {}
+
+  leaflet@1.9.4: {}
 
   leven@3.1.0: {}
 
