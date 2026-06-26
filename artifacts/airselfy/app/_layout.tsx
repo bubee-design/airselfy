@@ -8,10 +8,12 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StripeProvider } from "@stripe/stripe-react-native";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { IncomingRequestModal } from "@/components/IncomingRequestModal";
@@ -23,6 +25,13 @@ import { WalletProvider } from "@/context/WalletContext";
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+function getApiBase(): string {
+  if (Platform.OS === "web") return "/api";
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) return `https://${domain}/api`;
+  return "/api";
+}
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
@@ -59,6 +68,17 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
+  const [stripePublishableKey, setStripePublishableKey] = useState("");
+
+  useEffect(() => {
+    fetch(`${getApiBase()}/stripe/config`)
+      .then((r) => r.json())
+      .then((data: { publishableKey?: string }) => {
+        if (data.publishableKey) setStripePublishableKey(data.publishableKey);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
@@ -73,16 +93,21 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
-              <AuthProvider>
-                <AppProvider>
-                  <WalletProvider>
-                    <SocketProvider>
-                      <RootLayoutNav />
-                      <IncomingRequestModal />
-                    </SocketProvider>
-                  </WalletProvider>
-                </AppProvider>
-              </AuthProvider>
+              <StripeProvider
+                publishableKey={stripePublishableKey}
+                merchantIdentifier="merchant.com.airselfy.app"
+              >
+                <AuthProvider>
+                  <AppProvider>
+                    <WalletProvider>
+                      <SocketProvider>
+                        <RootLayoutNav />
+                        <IncomingRequestModal />
+                      </SocketProvider>
+                    </WalletProvider>
+                  </AppProvider>
+                </AuthProvider>
+              </StripeProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

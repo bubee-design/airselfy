@@ -7,6 +7,8 @@ import React, {
   useState,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
+import { useStripe } from "@stripe/stripe-react-native";
 import { useAuth } from "./AuthContext";
 
 export type TransactionType = "topup" | "spend" | "earn" | "withdraw";
@@ -24,6 +26,7 @@ interface WalletContextValue {
   earningsCents: number;
   transactions: Transaction[];
   topUpCents: (cents: number, label: string) => void;
+  topUpWithStripe: (cents: number, label: string) => Promise<{ success: boolean; error?: string }>;
   deductCents: (cents: number, label: string) => boolean;
   earnCents: (cents: number, label: string) => void;
   withdrawEarnings: (cents: number, label: string) => boolean;
@@ -31,11 +34,19 @@ interface WalletContextValue {
 
 const STARTER_CENTS = 500; // $5.00 free credit for every new account
 
+function getApiBase(): string {
+  if (Platform.OS === "web") return "/api";
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (domain) return `https://${domain}/api`;
+  return "/api";
+}
+
 const WalletContext = createContext<WalletContextValue>({
   balanceCents: 0,
   earningsCents: 0,
   transactions: [],
   topUpCents: () => {},
+  topUpWithStripe: async () => ({ success: false }),
   deductCents: () => false,
   earnCents: () => {},
   withdrawEarnings: () => false,
@@ -43,14 +54,12 @@ const WalletContext = createContext<WalletContextValue>({
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const [balanceCents, setBalanceCents] = useState(0);
   const [earningsCents, setEarningsCents] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  // Refs keep the latest values accessible synchronously so deductCents /
-  // withdrawEarnings can check eligibility without relying on closed-over
-  // state (avoids the React 18 StrictMode double-updater side-effect trap).
   const balanceCentsRef = useRef(0);
   balanceCentsRef.current = balanceCents;
   const earningsCentsRef = useRef(0);
@@ -80,7 +89,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
 
         if (storedBalance === null) {
-          // First time this user opens the app — grant starter credit.
           setBalanceCents(STARTER_CENTS);
           await AsyncStorage.setItem(balanceKey, String(STARTER_CENTS));
         } else {
@@ -118,31 +126,91 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     ]);
   }, []);
 
-  const topUpCents = useCallback((cents: number, label: string) => {
-    setBalanceCents((prev) => prev + cents);
-    addTx({ amount: cents, label, type: "topup" });
-  }, [addTx]);
+  const topUpCents = useCallback(
+    (cents: number, label: string) => {
+      setBalanceCents((prev) => prev + cents);
+      addTx({ amount: cents, label, type: "topup" });
+    },
+    [addTx]
+  );
 
-  const deductCents = useCallback((cents: number, label: string): boolean => {
-    // Read from ref to get the current value synchronously, avoiding any
-    // mutation inside a setState updater (which React 18 may call twice).
-    if (balanceCentsRef.current < cents) return false;
-    setBalanceCents((prev) => Math.max(0, prev - cents));
-    addTx({ amount: cents, label, type: "spend" });
-    return true;
-  }, [addTx]);
+  const topUpWithStripe = useCallback(
+    async (cents: number, label: string): Promise<{ success: boolean; error?: string }> => {
+      if (!user) return { success: false, error: "Not logged in" };
 
-  const earnCents = useCallback((cents: number, label: string) => {
-    setEarningsCents((prev) => prev + cents);
-    addTx({ amount: cents, label, type: "earn" });
-  }, [addTx]);
+      try {
+        // 1. Create a PaymentIntent on the server
+        const response = await fetch(`${getApiBase()}/stripe/payment-intent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: String(user.id), amountCents: cents }),
+        });
 
-  const withdrawEarnings = useCallback((cents: number, label: string): boolean => {
-    if (earningsCentsRef.current < cents) return false;
-    setEarningsCents((prev) => Math.max(0, prev - cents));
-    addTx({ amount: cents, label, type: "withdraw" });
-    return true;
-  }, [addTx]);
+        if (!response.ok) {
+          const err = await response.json() as { error?: string };
+          return { success: false, error: err.error ?? "Failed to create payment" };
+        }
+
+        const { clientSecret } = await response.json() as { clientSecret: string };
+
+        // 2. Initialize the payment sheet
+        const { error: initError } = await initPaymentSheet({
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: "Airselfy",
+          returnURL: "airselfy://stripe-return",
+        });
+
+        if (initError) {
+          return { success: false, error: initError.message };
+        }
+
+        // 3. Present the native payment sheet
+        const { error: payError } = await presentPaymentSheet();
+
+        if (payError) {
+          if (payError.code === "Canceled") {
+            return { success: false, error: "canceled" };
+          }
+          return { success: false, error: payError.message };
+        }
+
+        // 4. Payment succeeded — credit the local wallet
+        topUpCents(cents, label);
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err?.message ?? "Payment failed" };
+      }
+    },
+    [user, initPaymentSheet, presentPaymentSheet, topUpCents]
+  );
+
+  const deductCents = useCallback(
+    (cents: number, label: string): boolean => {
+      if (balanceCentsRef.current < cents) return false;
+      setBalanceCents((prev) => Math.max(0, prev - cents));
+      addTx({ amount: cents, label, type: "spend" });
+      return true;
+    },
+    [addTx]
+  );
+
+  const earnCents = useCallback(
+    (cents: number, label: string) => {
+      setEarningsCents((prev) => prev + cents);
+      addTx({ amount: cents, label, type: "earn" });
+    },
+    [addTx]
+  );
+
+  const withdrawEarnings = useCallback(
+    (cents: number, label: string): boolean => {
+      if (earningsCentsRef.current < cents) return false;
+      setEarningsCents((prev) => Math.max(0, prev - cents));
+      addTx({ amount: cents, label, type: "withdraw" });
+      return true;
+    },
+    [addTx]
+  );
 
   return (
     <WalletContext.Provider
@@ -151,6 +219,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         earningsCents,
         transactions,
         topUpCents,
+        topUpWithStripe,
         deductCents,
         earnCents,
         withdrawEarnings,

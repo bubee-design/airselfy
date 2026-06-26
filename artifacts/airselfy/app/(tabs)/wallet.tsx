@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Platform,
   Pressable,
@@ -90,11 +91,12 @@ function TopUpSheet({
   onConfirm,
   onClose,
 }: {
-  onConfirm: (cents: number) => void;
+  onConfirm: (cents: number) => Promise<void>;
   onClose: () => void;
 }) {
   const colors = useColors();
   const [selected, setSelected] = useState<number | null>(null);
+  const [paying, setPaying] = useState(false);
   const slideAnim = useRef(new Animated.Value(320)).current;
 
   useEffect(() => {
@@ -106,16 +108,19 @@ function TopUpSheet({
     }).start();
   }, []);
 
-  function handleConfirm() {
-    if (!selected) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onConfirm(selected);
-    onClose();
+  async function handleConfirm() {
+    if (!selected || paying) return;
+    setPaying(true);
+    try {
+      await onConfirm(selected);
+    } finally {
+      setPaying(false);
+    }
   }
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.overlay]}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      <Pressable style={StyleSheet.absoluteFill} onPress={paying ? undefined : onClose} />
       <Animated.View
         style={[
           styles.sheet,
@@ -159,18 +164,22 @@ function TopUpSheet({
 
         <Pressable
           onPress={handleConfirm}
-          disabled={!selected}
+          disabled={!selected || paying}
           style={({ pressed }) => [
             styles.confirmBtn,
             {
               backgroundColor: selected ? colors.primary : colors.muted,
-              opacity: pressed ? 0.85 : 1,
+              opacity: pressed || paying ? 0.85 : 1,
             },
           ]}
         >
-          <Text style={styles.confirmText}>
-            {selected ? `Add ${usd(selected)}` : "Select an amount"}
-          </Text>
+          {paying ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.confirmText}>
+              {selected ? `Pay ${usd(selected)} with Card` : "Select an amount"}
+            </Text>
+          )}
         </Pressable>
       </Animated.View>
     </View>
@@ -257,7 +266,7 @@ export default function WalletScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { balanceCents, earningsCents, transactions, topUpCents, withdrawEarnings } =
+  const { balanceCents, earningsCents, transactions, topUpWithStripe, withdrawEarnings } =
     useWallet();
 
   const [sheet, setSheet] = useState<"topup" | "withdraw" | null>(null);
@@ -265,6 +274,19 @@ export default function WalletScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 100 : 100;
   const grouped = groupByDate(transactions);
+
+  async function handleTopUp(cents: number) {
+    const result = await topUpWithStripe(cents, "Balance Top-Up");
+    if (result.success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSheet(null);
+    } else if (result.error && result.error !== "canceled") {
+      Alert.alert("Payment failed", result.error);
+    } else {
+      // User canceled — keep sheet open or close silently
+      setSheet(null);
+    }
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -398,7 +420,7 @@ export default function WalletScreen() {
 
       {sheet === "topup" && (
         <TopUpSheet
-          onConfirm={(cents) => topUpCents(cents, "Balance Top-Up")}
+          onConfirm={handleTopUp}
           onClose={() => setSheet(null)}
         />
       )}
@@ -590,7 +612,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   optionMain: { fontSize: 18, fontWeight: "700" },
-  optionSub: { fontSize: 11 },
   confirmBtn: { borderRadius: 16, paddingVertical: 16, alignItems: "center" },
   confirmText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 

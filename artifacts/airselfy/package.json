@@ -70,6 +70,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "@stripe/stripe-react-native": "^0.67.0",
     "expo-camera": "~17.0.10",
     "expo-file-system": "~19.0.23",
     "expo-sensors": "~15.0.8",
