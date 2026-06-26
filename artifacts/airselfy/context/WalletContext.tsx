@@ -9,6 +9,7 @@ import React, {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { useStripe } from "@stripe/stripe-react-native";
+import { stripeReady } from "@/components/StripeWrapper";
 import { useAuth } from "./AuthContext";
 
 export type TransactionType = "topup" | "spend" | "earn" | "withdraw";
@@ -139,6 +140,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       if (!user) return { success: false, error: "Not logged in" };
 
       try {
+        // 0. Ensure StripeProvider has been given a real publishable key before proceeding
+        await stripeReady;
+
         // 1. Create a PaymentIntent on the server
         const response = await fetch(`${getApiBase()}/stripe/payment-intent`, {
           method: "POST",
