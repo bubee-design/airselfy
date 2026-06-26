@@ -81,9 +81,9 @@ function TxRow({ tx }: { tx: Transaction }) {
 // ── Top-up sheet ──────────────────────────────────────────────────────────────
 
 const TOP_UP_OPTIONS = [
-  { cents: 200,  label: "$2",  sub: "200¢" },
-  { cents: 500,  label: "$5",  sub: "500¢" },
-  { cents: 1000, label: "$10", sub: "1000¢" },
+  { cents: 2000, label: "$20",  sub: "2000¢" },
+  { cents: 5000, label: "$50",  sub: "5000¢" },
+  { cents: 10000, label: "$100", sub: "10000¢" },
 ];
 
 function TopUpSheet({

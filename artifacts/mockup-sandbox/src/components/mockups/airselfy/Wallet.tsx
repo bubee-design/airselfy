@@ -90,7 +90,7 @@ export function Wallet() {
             <span className="text-white/95 text-sm font-semibold">Add Balance</span>
           </div>
           <div className="flex gap-1.5">
-            {["$2", "$5", "$10"].map((a) => (
+            {["$20", "$50", "$100"].map((a) => (
               <div key={a} className="rounded-full px-2.5 py-1" style={{ background: "rgba(255,255,255,0.22)" }}>
                 <span className="text-white text-xs font-semibold">{a}</span>
               </div>
