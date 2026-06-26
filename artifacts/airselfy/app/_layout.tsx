@@ -18,6 +18,7 @@ import { IncomingRequestModal } from "@/components/IncomingRequestModal";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AppProvider } from "@/context/AppContext";
 import { SocketProvider } from "@/context/SocketContext";
+import { WalletProvider } from "@/context/WalletContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -74,10 +75,12 @@ export default function RootLayout() {
             <KeyboardProvider>
               <AuthProvider>
                 <AppProvider>
-                  <SocketProvider>
-                    <RootLayoutNav />
-                    <IncomingRequestModal />
-                  </SocketProvider>
+                  <WalletProvider>
+                    <SocketProvider>
+                      <RootLayoutNav />
+                      <IncomingRequestModal />
+                    </SocketProvider>
+                  </WalletProvider>
                 </AppProvider>
               </AuthProvider>
             </KeyboardProvider>

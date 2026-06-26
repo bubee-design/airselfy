@@ -7,5 +7,6 @@ export const modules: ModuleMap = {
   "./components/mockups/airselfy/CreateAccount.tsx": () => import("../components/mockups/airselfy/CreateAccount.tsx"),
   "./components/mockups/airselfy/Home.tsx": () => import("../components/mockups/airselfy/Home.tsx"),
   "./components/mockups/airselfy/Login.tsx": () => import("../components/mockups/airselfy/Login.tsx"),
-  "./components/mockups/airselfy/Map.tsx": () => import("../components/mockups/airselfy/Map.tsx")
+  "./components/mockups/airselfy/Map.tsx": () => import("../components/mockups/airselfy/Map.tsx"),
+  "./components/mockups/airselfy/Wallet.tsx": () => import("../components/mockups/airselfy/Wallet.tsx")
 };

@@ -25,6 +25,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "photo.on.rectangle", selected: "photo.on.rectangle.angled.fill" }} />
         <Label>Album</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="wallet">
+        <Icon sf={{ default: "wallet.pass", selected: "wallet.pass.fill" }} />
+        <Label>Wallet</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -99,6 +103,18 @@ function ClassicTabLayout() {
               <SymbolView name="photo.on.rectangle" tintColor={color} size={22} />
             ) : (
               <Feather name="image" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          title: "Wallet",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="wallet.pass" tintColor={color} size={22} />
+            ) : (
+              <Feather name="credit-card" size={22} color={color} />
             ),
         }}
       />
