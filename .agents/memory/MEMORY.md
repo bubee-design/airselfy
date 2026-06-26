@@ -1,2 +1,3 @@
 - [Expo react-native-maps web bundling](expo-rnmaps-web.md) — rnmaps imports must live in `components/`, not `app/` — require.context picks up .native.tsx files in app/ on web
-- [SDK 56 upgrade decisions](sdk56-upgrade.md) — key version pins, breaking changes fixed, and peer dep quirks from the SDK 54→56 migration
+- [Stripe Replit connector key names](stripe-connector-keys.md) — connector returns `settings.secret` and `settings.publishable`, not `secret_key`/`publishable_key`; validate with `secret ?? secret_key` pattern
+- [stripe-replit-sync schema init](stripe-sync-schema.md) — StripeSync's findOrCreateManagedWebhook needs stripe.accounts table; for simple PaymentIntent flows skip StripeSync entirely and just ping stripe.accounts.retrieve() to verify credentials

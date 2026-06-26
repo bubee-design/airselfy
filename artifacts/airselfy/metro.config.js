@@ -18,4 +18,18 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
+// Exclude server-only packages from Metro's file watcher.
+// `stripe` creates and deletes temp directories during initialization which
+// causes Metro's FallbackWatcher to crash with ENOENT errors.
+const serverOnlyPackages = /node_modules[/\\](stripe|stripe-replit-sync)[/\\]/;
+const { blockList: existingBlockList } = config.resolver;
+if (existingBlockList) {
+  const existing = Array.isArray(existingBlockList)
+    ? existingBlockList
+    : [existingBlockList];
+  config.resolver.blockList = [...existing, serverOnlyPackages];
+} else {
+  config.resolver.blockList = serverOnlyPackages;
+}
+
 module.exports = config;

@@ -1,9 +1,8 @@
 import { createServer } from "node:http";
-import { runMigrations } from "stripe-replit-sync";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { attachSocket } from "./socket";
-import { getStripeSync } from "./stripeClient";
+import { getUncachableStripeClient } from "./stripeClient";
 
 const rawPort = process.env["PORT"];
 
@@ -20,28 +19,14 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function initStripe() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    logger.warn("DATABASE_URL missing — skipping Stripe initialization");
-    return;
-  }
   try {
-    logger.info("Initializing Stripe schema…");
-    await runMigrations({ databaseUrl });
-    logger.info("Stripe schema ready");
-
-    const stripeSync = await getStripeSync();
-
-    const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0]}`;
-    await stripeSync.findOrCreateManagedWebhook(`${webhookBaseUrl}/api/stripe/webhook`);
-    logger.info("Stripe webhook configured");
-
-    // Non-blocking backfill
-    stripeSync.syncBackfill()
-      .then(() => logger.info("Stripe backfill complete"))
-      .catch((err) => logger.error({ err }, "Stripe backfill error"));
+    // Verify Stripe credentials are reachable on startup.
+    // PaymentIntent creation happens per-request, not here.
+    const stripe = await getUncachableStripeClient();
+    const account = await stripe.accounts.retrieve();
+    logger.info({ accountId: account.id }, "Stripe connected");
   } catch (err) {
-    logger.error({ err }, "Stripe initialization failed — payments unavailable");
+    logger.error({ err }, "Stripe credentials unavailable — payments will fail until resolved");
   }
 }
 
