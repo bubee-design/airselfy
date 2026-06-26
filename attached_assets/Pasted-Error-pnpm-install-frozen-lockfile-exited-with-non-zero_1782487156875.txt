@@ -1,0 +1,33 @@
+Error: pnpm install --frozen-lockfile exited with non-zero code: 1
+    at ChildProcess.completionListener (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/spawn-async/build/spawnAsync.js:113:23)
+    at Object.onceWrapper (node:events:634:26)
+    at ChildProcess.emit (node:events:519:28)
+    at ChildProcess.emit (node:domain:489:12)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+    ...
+    at spawnAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/spawn-async/build/spawnAsync.js:9:23)
+    at spawn (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/turtle-spawn/dist/index.js:16:47)
+    at installDependenciesAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/common/installDependencies.js:59:50)
+    at runInstallDependenciesAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/common/setup.js:174:107)
+    at /Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/common/setup.js:81:15
+    at BuildContext.runBuildPhase (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/context.js:126:34)
+    at setupAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/common/setup.js:70:15)
+    at async buildAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/builders/ios.js:53:5)
+    at async runBuilderWithHooksAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/builders/common.js:12:13)
+    at async Object.iosBuilder (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/builders/ios.js:40:16)
+
+Build failed
+Unknown error. See logs of the Install dependencies build phase for more information.
+Error: Unknown error. See logs of the Install dependencies build phase for more information.
+    at resolveBuildPhaseErrorAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/buildErrors/detectError.js:61:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async BuildContext.handleBuildPhaseErrorAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/context.js:193:28)
+    at async BuildContext.runBuildPhase (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/context.js:138:35)
+    at async setupAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/common/setup.js:70:5)
+    at async buildAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/builders/ios.js:53:5)
+    at async runBuilderWithHooksAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/builders/common.js:12:13)
+    at async Object.iosBuilder (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/@expo/build-tools/dist/builders/ios.js:40:16)
+    at async buildIosAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/eas-cli-local-build-plugin/dist/ios.js:43:12)
+    at async buildAsync (/Users/bubee/.npm/_npx/10a5486bc8d8aa37/node_modules/eas-cli-local-build-plugin/dist/build.js:58:29)
+npx -y eas-cli-local-build-plugin@20.1.0 eyJqb2IiOnsidHlwZSI6Im1hbmFnZWQiLCJwbGF0Zm9ybSI6ImlvcyIsInByb2plY3RBcmNoaXZlIjp7InR5cGUiOiJQQVRIIiwicGF0aCI6Ii92YXIvZm9sZGVycy95bS94amYyd3pzNTU5bmZmdjh6bWZxNWoxOGMwMDAwZ24vVC9lYXMtY2xpLW5vZGVqcy81NTAzZDFiMC1kNzEyLTQ4ZGEtYjdiYi1lMmUxNjRmZWY5YTYudGFyLmd6In0sInByb2plY3RSb290RGlyZWN0b3J5IjoiYXJ0aWZhY3RzL2FpcnNlbGZ5IiwiYnVpbGRlckVudmlyb25tZW50Ijp7ImVudiI6eyJFWFBPX1BVQkxJQ19FTlYiOiJkZXZlbG9wbWVudCJ9fSwiY2FjaGUiOnsiZGlzYWJsZWQiOmZhbHNlLCJwYXRocyI6W10sImNsZWFyIjpmYWxzZX0sInNlY3JldHMiOnsiYnVpbGRDcmVkZW50aWFscyI6e319LCJ1cGRhdGVzIjp7fSwiZGV2ZWxvcG1lbnRDbGllbnQiOnRydWUsInNpbXVsYXRvciI6dHJ1ZSwic2NoZW1lIjoiYWlyc2VsZnkiLCJ1c2VybmFtZSI6ImluZGljdXMyMzgyIiwiZXhwZXJpbWVudGFsIjp7fSwibW9kZSI6ImJ1aWxkIiwidHJpZ2dlcmVkQnkiOiJFQVNfQ0xJIiwiYXBwSWQiOiI2YWI4MzE5OC01ZTQyLTQ2ZjMtOGRjZS04OTFhODNlMTJhZmIiLCJpbml0aWF0aW5nVXNlcklkIjoiOWExZGU2ZmMtZmY3My00ZmQxLTliNWEtNDY1ZTJjZmNmZWFhIn0sIm1ldGFkYXRhIjp7InRyYWNraW5nQ29udGV4dCI6eyJ0cmFja2luZ19pZCI6ImIwMWU0M2JjLTkxYzMtNGFkNS1iYjBmLWQ5ODYwMjg1MDZlMyIsInBsYXRmb3JtIjoiaW9zIiwic2RrX3ZlcnNpb24iOiI1Ni4wLjAiLCJhY2NvdW50X2lkIjoiMDc5MjgwNmUtYjhlMC00YmI4LWE0MmMtNTYwMzJhYTJhMjlkIiwicHJvamVjdF9pZCI6IjZhYjgzMTk4LTVlNDItNDZmMy04ZGNlLTg5MWE4M2UxMmFmYiIsInByb2plY3RfdHlwZSI6Im1hbmFnZWQiLCJkZXZfY2xpZW50Ijp0cnVlLCJkZXZfY2xpZW50X3ZlcnNpb24iOiI1Ni4wLjIwIiwibm9fd2FpdCI6ZmFsc2UsInJ1bl9mcm9tX2NpIjpmYWxzZSwibG9jYWwiOnRydWV9LCJhcHBCdWlsZFZlcnNpb24iOiIxIiwiYXBwVmVyc2lvbiI6IjEuMC4wIiwiY2xpVmVyc2lvbiI6IjIwLjMuMCIsIndvcmtmbG93IjoibWFuYWdlZCIsImNyZWRlbnRpYWxzU291cmNlIjoicmVtb3RlIiwic2RrVmVyc2lvbiI6IjU2LjAuMCIsImZpbmdlcnByaW50SGFzaCI6IjBhMDQ1ZDI2ZGIyYTQzNmU5NmMyYWI1NDJiNzExNjg0MzBkNDczYjMiLCJyZWFjdE5hdGl2ZVZlcnNpb24iOiIwLjg2LjAiLCJleHBvUGFja2FnZVZlcnNpb24iOiI1Ni4wLjEyIiwiZGlzdHJpYnV0aW9uIjoiaW50ZXJuYWwiLCJhcHBOYW1lIjoiYWlyc2VsZnkiLCJhcHBJZGVudGlmaWVyIjoiY29tLmFpcnNlbGZ5LmFwcCIsImJ1aWxkUHJvZmlsZSI6ImRldmVsb3BtZW50IiwiZ2l0Q29tbWl0SGFzaCI6IjIzNWI3NWViNjQyNmJjMWEyZjkwOTc0ZTU5OGNjNzJmMmY1MjM3OTQiLCJnaXRDb21taXRNZXNzYWdlIjoiY2hvcmU6IHVwZGF0ZSBwbnBtIGxvY2tmaWxlIGZvciBTREsgNTYiLCJpc0dpdFdvcmtpbmdUcmVlRGlydHkiOnRydWUsInVzZXJuYW1lIjoiaW5kaWN1czIzODIiLCJydW5XaXRoTm9XYWl0RmxhZyI6ZmFsc2UsInJ1bkZyb21DSSI6ZmFsc2UsImRldmVsb3BtZW50Q2xpZW50Ijp0cnVlLCJyZXF1aXJlZFBhY2thZ2VNYW5hZ2VyIjoicG5wbSIsInNpbXVsYXRvciI6dHJ1ZX19 exited with non-zero code: 1
