@@ -37,14 +37,6 @@
     },
     "plugins": [
       [
-        "expo-build-properties",
-        {
-          "ios": {
-            "deploymentTarget": "16.4"
-          }
-        }
-      ],
-      [
         "expo-router",
         {
           "origin": "https://replit.com/"
