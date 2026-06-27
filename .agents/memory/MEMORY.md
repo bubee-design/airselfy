@@ -2,3 +2,4 @@
 - [Stripe Replit connector key names](stripe-connector-keys.md) — connector returns `settings.secret` and `settings.publishable`, not `secret_key`/`publishable_key`; validate with `secret ?? secret_key` pattern
 - [stripe-replit-sync schema init](stripe-sync-schema.md) — StripeSync's findOrCreateManagedWebhook needs stripe.accounts table; for simple PaymentIntent flows skip StripeSync entirely and just ping stripe.accounts.retrieve() to verify credentials
 - [Leaflet on Expo web](leaflet-expo-web.md) — use `leaflet` (CJS) directly via View ref; avoid react-leaflet v5 (pure ESM, "type":"module"); inject CSS from CDN via document.createElement
+- [Metro blockList for temp dirs](metro-blocklist.md) — add `.local/skills/.tmp-` to Metro blockList in metro.config.js; skill tool temp dirs disappear and crash FallbackWatcher with ENOENT
