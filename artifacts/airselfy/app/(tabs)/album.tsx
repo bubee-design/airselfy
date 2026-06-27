@@ -264,7 +264,7 @@ export default function AlbumScreen() {
                   style={styles.gridFooter}
                 >
                   <Text style={styles.byText}>By: {item.byName}</Text>
-                  <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
+                  <Text style={styles.timeText}>{formatDate(item.createdAt)} · {formatTime(item.createdAt)}</Text>
                 </LinearGradient>
               </Pressable>
             );

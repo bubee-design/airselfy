@@ -115,7 +115,7 @@ export function Album() {
                   {/* Attribution */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 pt-6 pb-2.5">
                     <p className="text-white text-[11px] font-semibold">By: {item.by}</p>
-                    <p className="text-white/60 text-[10px]">{item.time}</p>
+                    <p className="text-white/60 text-[10px]">{item.date} · {item.time}</p>
                   </div>
                 </button>
               ))}
