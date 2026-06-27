@@ -26,7 +26,7 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, needsOnboarding } = useAuth();
   const segments = useSegments();
 
   useEffect(() => {
@@ -42,11 +42,11 @@ function RootLayoutNav() {
       return;
     }
 
-    if (user && !user.userType && currentScreen !== "onboarding" && !isPublicScreen) {
+    if (user && needsOnboarding && currentScreen !== "onboarding" && !isPublicScreen) {
       router.replace("/onboarding");
       return;
     }
-  }, [user, isLoading, segments]);
+  }, [user, isLoading, needsOnboarding, segments]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

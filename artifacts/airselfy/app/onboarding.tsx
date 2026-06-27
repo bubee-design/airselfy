@@ -21,17 +21,22 @@ import { useColors } from "@/hooks/useColors";
 export default function OnboardingScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { setUserType } = useAuth();
+  const { user, setUserType } = useAuth();
 
-  const [selectedType, setSelectedType] = useState<"regular" | "student" | null>(null);
+  const savedProfile = user?.studentProfile ?? null;
+  const savedType = (user?.userType as "regular" | "student" | null) ?? null;
+
+  const [selectedType, setSelectedType] = useState<"regular" | "student" | null>(savedType);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [fullName, setFullName] = useState("");
-  const [studentEmail, setStudentEmail] = useState("");
-  const [gender, setGender] = useState("");
-  const [degree, setDegree] = useState("");
-  const [university, setUniversity] = useState("");
+  const [fullName, setFullName] = useState(savedProfile?.fullName ?? "");
+  const [studentEmail, setStudentEmail] = useState(savedProfile?.email ?? "");
+  const [gender, setGender] = useState(savedProfile?.gender ?? "");
+  const [degree, setDegree] = useState(savedProfile?.degree ?? "");
+  const [university, setUniversity] = useState(savedProfile?.university ?? "");
+
+  const isReturning = !!savedType;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top > 0 ? insets.top : 20;
 
@@ -99,9 +104,13 @@ export default function OnboardingScreen() {
 
           {/* Headline */}
           <View style={s.headerWrap}>
-            <Text style={s.title}>You're in! 🎉</Text>
+            <Text style={s.title}>
+              {isReturning ? `Welcome back, ${user?.name?.split(" ")[0]}!` : "You're in! 🎉"}
+            </Text>
             <Text style={s.subtitle}>
-              Tell us who you are so we can tailor your experience.
+              {isReturning
+                ? "How are you using Airselfy today?"
+                : "Tell us who you are so we can tailor your experience."}
             </Text>
           </View>
 
@@ -235,9 +244,17 @@ export default function OnboardingScreen() {
           {/* Student form */}
           {selectedType === "student" && (
             <View style={s.form}>
-              <Text style={[s.formTitle, { color: colors.foreground }]}>
-                Student Profile
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <Text style={[s.formTitle, { color: colors.foreground }]}>
+                  Student Profile
+                </Text>
+                {savedProfile && (
+                  <View style={[s.savedBadge, { backgroundColor: colors.accent + "18", borderColor: colors.accent + "40" }]}>
+                    <Feather name="check-circle" size={11} color={colors.accent} />
+                    <Text style={[s.savedBadgeText, { color: colors.accent }]}>Saved</Text>
+                  </View>
+                )}
+              </View>
 
               <View style={s.field}>
                 <Text style={[s.label, { color: colors.mutedForeground }]}>
@@ -417,7 +434,9 @@ export default function OnboardingScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={s.btnText}>
-                    {selectedType === "student"
+                    {isReturning
+                      ? "Confirm"
+                      : selectedType === "student"
                       ? "Verify & Continue for Free"
                       : "Continue"}
                   </Text>
@@ -507,6 +526,20 @@ const styles = (colors: ReturnType<typeof useColors>) =>
       borderRadius: 9,
       alignItems: "center",
       justifyContent: "center",
+    },
+    savedBadge: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 20,
+      borderWidth: 1,
+    },
+    savedBadgeText: {
+      fontSize: 11,
+      fontWeight: "600" as const,
+      fontFamily: "Inter_600SemiBold",
     },
     form: {
       gap: 14,

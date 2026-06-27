@@ -22,6 +22,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  needsOnboarding: boolean;
   login: (email: string, password: string) => Promise<boolean | string>;
   signup: (name: string, email: string, password: string) => Promise<boolean | string>;
   logout: () => Promise<void>;
@@ -44,6 +45,7 @@ function getApiBase(): string {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -84,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
       setUser(newUser);
+      setNeedsOnboarding(true);
       return true;
     } catch {
       return "Unable to connect. Please check your connection.";
@@ -120,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(loggedInUser));
       setUser(loggedInUser);
+      setNeedsOnboarding(true);
       return true;
     } catch {
       return "Unable to connect. Please check your connection.";
@@ -155,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
       setUser(updatedUser);
+      setNeedsOnboarding(false);
       return true;
     } catch {
       return "Unable to connect. Please check your connection.";
@@ -164,10 +169,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function logout() {
     await AsyncStorage.removeItem(STORAGE_KEY);
     setUser(null);
+    setNeedsOnboarding(false);
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, setUserType }}>
+    <AuthContext.Provider value={{ user, isLoading, needsOnboarding, login, signup, logout, setUserType }}>
       {children}
     </AuthContext.Provider>
   );
