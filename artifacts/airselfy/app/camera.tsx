@@ -19,7 +19,7 @@ import { useColors } from "@/hooks/useColors";
 
 // Lazy import camera on native only
 type CameraViewRef = {
-  takePictureAsync: (opts?: { base64?: boolean; quality?: number }) => Promise<{ uri: string; base64?: string }>;
+  takePictureAsync: (opts?: { base64?: boolean; quality?: number; shutterSound?: boolean }) => Promise<{ uri: string; base64?: string }>;
   recordAsync: (opts: { maxDuration: number }) => Promise<{ uri: string }>;
   stopRecording: () => void;
 };
@@ -108,7 +108,7 @@ export default function CameraScreen() {
         thumbnailUriRef.current = "";
         if (Platform.OS !== "web" && cameraRef.current) {
           try {
-            const snap = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.3 });
+            const snap = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.3, shutterSound: false });
             thumbnailUriRef.current = snap.base64 ? `data:image/jpeg;base64,${snap.base64}` : snap.uri;
           } catch {}
         }
