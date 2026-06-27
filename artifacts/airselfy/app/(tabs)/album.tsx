@@ -117,6 +117,10 @@ export default function AlbumScreen() {
   const [filter, setFilter] = useState<"all" | "photo" | "video">("all");
   const [deleting, setDeleting] = useState(false);
 
+  // Multi-select state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   // Expand animation
   const scaleAnim = useRef(new Animated.Value(0.86)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -159,38 +163,125 @@ export default function AlbumScreen() {
     closeItem();
   }
 
+  function enterSelectMode() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectMode(true);
+    setSelectedIds(new Set());
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
+
+  function toggleItemSelection(id: string) {
+    Haptics.selectionAsync();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleDeleteSelected() {
+    if (selectedIds.size === 0) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setDeleting(true);
+    await Promise.all([...selectedIds].map((id) => deleteAlbumItem(id)));
+    setDeleting(false);
+    exitSelectMode();
+  }
+
+  function handleGridItemPress(item: AlbumItem) {
+    if (selectMode) {
+      toggleItemSelection(item.id);
+    } else {
+      openItem(item);
+    }
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12 }]}>
-        <View>
-          <Text style={[styles.title, { color: colors.foreground }]}>Your Album</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-            {albumLoading ? "Syncing…" : `${albumItems.length} item${albumItems.length !== 1 ? "s" : ""} · captured for you`}
-          </Text>
-        </View>
+        {selectMode ? (
+          /* Selection mode header */
+          <View style={styles.headerRow}>
+            <Pressable onPress={exitSelectMode} style={styles.headerTextBtn}>
+              <Text style={[styles.headerTextBtnLabel, { color: colors.primary }]}>Cancel</Text>
+            </Pressable>
+            <Text style={[styles.selectCount, { color: colors.foreground }]}>
+              {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select items"}
+            </Text>
+            <Pressable
+              onPress={handleDeleteSelected}
+              disabled={selectedIds.size === 0 || deleting}
+              style={[
+                styles.deleteSelectedBtn,
+                {
+                  backgroundColor: selectedIds.size > 0 ? colors.destructive + "18" : "transparent",
+                  borderColor: selectedIds.size > 0 ? colors.destructive + "40" : colors.border,
+                  opacity: deleting ? 0.5 : 1,
+                },
+              ]}
+            >
+              <Feather
+                name="trash-2"
+                size={14}
+                color={selectedIds.size > 0 ? colors.destructive : colors.mutedForeground}
+              />
+              <Text
+                style={[
+                  styles.deleteSelectedLabel,
+                  { color: selectedIds.size > 0 ? colors.destructive : colors.mutedForeground },
+                ]}
+              >
+                Delete{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          /* Normal header */
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={[styles.title, { color: colors.foreground }]}>Your Album</Text>
+              <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+                {albumLoading ? "Syncing…" : `${albumItems.length} item${albumItems.length !== 1 ? "s" : ""} · captured for you`}
+              </Text>
+            </View>
+            {albumItems.length > 0 && (
+              <Pressable onPress={enterSelectMode} style={styles.headerTextBtn}>
+                <Text style={[styles.headerTextBtnLabel, { color: colors.primary }]}>Select</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
 
-      {/* Filter chips */}
-      <View style={styles.filterRow}>
-        {(["all", "photo", "video"] as const).map((f) => (
-          <Pressable
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[
-              styles.filterChip,
-              {
-                backgroundColor: filter === f ? colors.primary : "transparent",
-                borderColor: filter === f ? colors.primary : colors.border,
-              },
-            ]}
-          >
-            <Text style={[styles.filterText, { color: filter === f ? "#fff" : colors.mutedForeground }]}>
-              {f === "all" ? "All" : f === "photo" ? "Photos" : "Videos"}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      {/* Filter chips — hidden in select mode */}
+      {!selectMode && (
+        <View style={styles.filterRow}>
+          {(["all", "photo", "video"] as const).map((f) => (
+            <Pressable
+              key={f}
+              onPress={() => setFilter(f)}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: filter === f ? colors.primary : "transparent",
+                  borderColor: filter === f ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.filterText, { color: filter === f ? "#fff" : colors.mutedForeground }]}>
+                {f === "all" ? "All" : f === "photo" ? "Photos" : "Videos"}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+      {selectMode && <View style={{ height: 16 }} />}
 
       {filtered.length === 0 ? (
         <View style={styles.emptyWrap}>
@@ -211,14 +302,20 @@ export default function AlbumScreen() {
           renderItem={({ item }) => {
             const col = itemColor(item);
             const hasImage = isRealUri(item.uri);
+            const isChecked = selectedIds.has(item.id);
             return (
               <Pressable
-                onPress={() => openItem(item)}
+                onPress={() => handleGridItemPress(item)}
+                onLongPress={() => {
+                  if (!selectMode) enterSelectMode();
+                  toggleItemSelection(item.id);
+                }}
                 style={({ pressed }) => [
                   styles.gridItem,
                   {
                     backgroundColor: colors.card,
-                    borderColor: colors.border,
+                    borderColor: isChecked ? colors.primary : colors.border,
+                    borderWidth: isChecked ? 2 : 1,
                     width: ITEM_SIZE,
                     height: ITEM_SIZE,
                     transform: [{ scale: pressed ? 0.96 : 1 }],
@@ -243,29 +340,53 @@ export default function AlbumScreen() {
                   </>
                 )}
 
+                {/* Dim overlay in select mode */}
+                {selectMode && !isChecked && (
+                  <View style={styles.dimOverlay} />
+                )}
+
+                {/* Checkmark overlay */}
+                {selectMode && (
+                  <View
+                    style={[
+                      styles.checkCircle,
+                      {
+                        backgroundColor: isChecked ? colors.primary : "rgba(0,0,0,0.45)",
+                        borderColor: isChecked ? colors.primary : "rgba(255,255,255,0.6)",
+                      },
+                    ]}
+                  >
+                    {isChecked && <Feather name="check" size={13} color="#fff" />}
+                  </View>
+                )}
+
                 {/* Play indicator for video items */}
-                {item.type === "video" && (
+                {!selectMode && item.type === "video" && (
                   <View style={styles.playBadge}>
                     <Feather name="play" size={10} color="#fff" />
                   </View>
                 )}
 
                 {/* Type badge */}
-                <View style={[styles.badge, { backgroundColor: "#00000066" }]}>
-                  {item.type === "video" && <View style={styles.recDot} />}
-                  <Text style={styles.badgeText}>
-                    {item.type === "photo" ? "Photo" : `${item.duration ?? ""}s`}
-                  </Text>
-                </View>
+                {!selectMode && (
+                  <View style={[styles.badge, { backgroundColor: "#00000066" }]}>
+                    {item.type === "video" && <View style={styles.recDot} />}
+                    <Text style={styles.badgeText}>
+                      {item.type === "photo" ? "Photo" : `${item.duration ?? ""}s`}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Footer */}
-                <LinearGradient
-                  colors={["transparent", "#00000099"]}
-                  style={styles.gridFooter}
-                >
-                  <Text style={styles.byText}>By: {item.byName}</Text>
-                  <Text style={styles.timeText}>{formatDate(item.createdAt)} · {formatTime(item.createdAt)}</Text>
-                </LinearGradient>
+                {!selectMode && (
+                  <LinearGradient
+                    colors={["transparent", "#00000099"]}
+                    style={styles.gridFooter}
+                  >
+                    <Text style={styles.byText}>By: {item.byName}</Text>
+                    <Text style={styles.timeText}>{formatDate(item.createdAt)} · {formatTime(item.createdAt)}</Text>
+                  </LinearGradient>
+                )}
               </Pressable>
             );
           }}
@@ -386,8 +507,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   title: { fontSize: 24, fontWeight: "700" as const, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
   subtitle: { fontSize: 13, marginTop: 2, fontFamily: "Inter_400Regular" },
+  headerTextBtn: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  headerTextBtnLabel: {
+    fontSize: 15,
+    fontWeight: "500" as const,
+    fontFamily: "Inter_500Medium",
+  },
+  selectCount: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    fontFamily: "Inter_600SemiBold",
+  },
+  deleteSelectedBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  deleteSelectedLabel: {
+    fontSize: 13,
+    fontWeight: "500" as const,
+    fontFamily: "Inter_500Medium",
+  },
   filterRow: {
     flexDirection: "row",
     paddingHorizontal: 20,
@@ -412,7 +566,6 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, textAlign: "center", fontFamily: "Inter_400Regular", lineHeight: 20 },
   gridItem: {
     borderRadius: 16,
-    borderWidth: 1,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
@@ -424,6 +577,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
+  },
+  dimOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  checkCircle: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
   },
   playBadge: {
     position: "absolute",
