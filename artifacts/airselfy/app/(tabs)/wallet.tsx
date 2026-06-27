@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { type Transaction, type TransactionType, useWallet } from "@/context/WalletContext";
 import { useColors } from "@/hooks/useColors";
@@ -301,14 +302,22 @@ export default function WalletScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.foreground }]}>Wallet</Text>
-          <LinearGradient
-            colors={[colors.primary, colors.accent]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.avatar}
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/profile");
+            }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
           >
-            <Text style={styles.avatarText}>{user?.initials ?? "??"}</Text>
-          </LinearGradient>
+            <LinearGradient
+              colors={[colors.primary, colors.accent]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.avatar}
+            >
+              <Text style={styles.avatarText}>{user?.initials ?? "??"}</Text>
+            </LinearGradient>
+          </Pressable>
         </View>
 
         {/* Balance card */}
