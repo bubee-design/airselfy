@@ -6,6 +6,17 @@ async function getStripeCredentials(): Promise<{
   publishableKey: string;
   webhookSecret?: string;
 }> {
+  // Local development fallback — set these in your .env file
+  const directSecret = process.env.STRIPE_SECRET_KEY;
+  const directPublishable = process.env.STRIPE_PUBLISHABLE_KEY;
+  if (directSecret) {
+    return {
+      secretKey: directSecret,
+      publishableKey: directPublishable ?? "",
+      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    };
+  }
+
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? "repl " + process.env.REPL_IDENTITY
