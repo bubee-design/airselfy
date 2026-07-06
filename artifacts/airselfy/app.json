@@ -20,7 +20,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "airselfy uses your camera to capture photos and videos requested by nearby users.",
         "NSLocationWhenInUseUsageDescription": "airselfy uses your location to show nearby users on the map and help with navigation.",
-        "NSMicrophoneUsageDescription": "airselfy uses your microphone to record video clips."
+        "NSMicrophoneUsageDescription": "airselfy uses your microphone to record video clips.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
